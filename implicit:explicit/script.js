@@ -188,9 +188,9 @@ function animate() {
 async function askImage(prompt) {
     const url = "https://itp-ima-replicate-proxy.web.app/api/create_n_get";
 
-    // Set your token in the console once:
-    // localStorage.setItem("ITP_IMA_TOKEN", "<YOUR_TOKEN>");
-    const authToken = window.localStorage.getItem("ITP_IMA_TOKEN") || "";
+    const ITP_IMA_TOKEN =
+        "eyJhbGciOiJSUzI1NiIsImtpZCI6IjRiMTFjYjdhYjVmY2JlNDFlOTQ4MDk0ZTlkZjRjNWI1ZWNhMDAwOWUiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiSmVzc2ljYSBTdW4iLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jS2ttNUtMMGJsb2o3QzgxMlJXRjRzT3hrWVlkMFotTDZQdEdkWkYyalFjY3BfbzdHWT1zOTYtYyIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9pdHAtaW1hLXJlcGxpY2F0ZS1wcm94eSIsImF1ZCI6Iml0cC1pbWEtcmVwbGljYXRlLXByb3h5IiwiYXV0aF90aW1lIjoxNzcwNzQxNzA5LCJ1c2VyX2lkIjoiNWgydjJEWkRMSFFzTjJ3MDY2RU96SkE1M3d3MSIsInN1YiI6IjVoMnYyRFpETEhRc04ydzA2NkVPekpBNTN3dzEiLCJpYXQiOjE3NzA3NDE3MDksImV4cCI6MTc3MDc0NTMwOSwiZW1haWwiOiJyczg3OTNAbnl1LmVkdSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7Imdvb2dsZS5jb20iOlsiMTAzMTM2Mjk2NTgxMjkzOTgwOTM1Il0sImVtYWlsIjpbInJzODc5M0BueXUuZWR1Il19LCJzaWduX2luX3Byb3ZpZGVyIjoiZ29vZ2xlLmNvbSJ9fQ.BrWKU0jXPfpD6XvaqN3GTkuDHv96Lumkz6PFAV-jOSZNy7y7TUsklIxy-FtWQYSS_EsmefjwUrh01JiT-M2zMiYSCLBkyHurduO5ifUKUUoG-w9P1S8aK4kuV8QjstEPsvBpsY7OVVHsWmx3j6Vud_Wtjz6FW7jekZuO5jGESLccmE0jDcLOcGXR5DCbQrGKWMTVwsESRd8XID-0vISmuqO2qB47cFM1glM7DDc65_MO4PZqgPLMeZLT2alnwtw8WJd7H1FlebMLQcvt-9GR-YyB7Ad3-KPLMGuL8IdZmmf2vk6qPsXtEdotV5NghQs0rLRL50sQO_K5gGEg3YmT0A";
+    const authToken = window.localStorage.getItem("ITP_IMA_TOKEN") || ITP_IMA_TOKEN;
     if (!authToken) {
         statusText = 'Missing token. Set localStorage key "ITP_IMA_TOKEN" and try again.';
         return;
