@@ -25,7 +25,13 @@ function drawText(response, location) {
 
 async function askLlama(userQuestion, location) {
     const url = "https://itp-ima-replicate-proxy.web.app/api/create_n_get";
-    let authToken = "eyJhbGciOiJSUzI1NiIsImtpZCI6ImY3NThlNTYzYzBiNjRhNzVmN2UzZGFlNDk0ZDM5NTk1YzE0MGVmOTMiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiSmVzc2ljYSBTdW4iLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jS2ttNUtMMGJsb2o3QzgxMlJXRjRzT3hrWVlkMFotTDZQdEdkWkYyalFjY3BfbzdHWT1zOTYtYyIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9pdHAtaW1hLXJlcGxpY2F0ZS1wcm94eSIsImF1ZCI6Iml0cC1pbWEtcmVwbGljYXRlLXByb3h5IiwiYXV0aF90aW1lIjoxNzcwMDgzMDc5LCJ1c2VyX2lkIjoiNWgydjJEWkRMSFFzTjJ3MDY2RU96SkE1M3d3MSIsInN1YiI6IjVoMnYyRFpETEhRc04ydzA2NkVPekpBNTN3dzEiLCJpYXQiOjE3NzAwODMwNzksImV4cCI6MTc3MDA4NjY3OSwiZW1haWwiOiJyczg3OTNAbnl1LmVkdSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7Imdvb2dsZS5jb20iOlsiMTAzMTM2Mjk2NTgxMjkzOTgwOTM1Il0sImVtYWlsIjpbInJzODc5M0BueXUuZWR1Il19LCJzaWduX2luX3Byb3ZpZGVyIjoiZ29vZ2xlLmNvbSJ9fQ.x2jon0_DUH1EHtoUGn4xrhk7q5XrpnEgRqF5D1GF_kEoqUuwbA_mOEIDWr6X8tJoK0Y5T8k_pRGFmDDoMQLoPfbh3dD2qSfSgKU85Rbd-6AtkvoYSR4h8N7QiCz6z7jLZsinJ1BZkaNN3PvayRoQV9DwjMhs1Tz1lFUdylpR4sWgaGwtY41UC2FwRK7byTtVZqd5Q4Eyrp_woS8_FUtBCri6uZOC-2pbQ3tfcHBek4zjtbYpVOtNZ3giJMu2FddiZvR7eAFoaEGSE7dy5fpky7fADcnG_dHvejwNmE4zlPZKZnc5Wattd8-Tjzg9NkS835bJcq7UV6B7xqzSses5YQ";
+    // Set your token in the console once:
+    // localStorage.setItem("ITP_IMA_TOKEN", "<YOUR_TOKEN>");
+    const authToken = window.localStorage.getItem("ITP_IMA_TOKEN") || "";
+    if (!authToken) {
+        drawText('Missing token. Set localStorage key "ITP_IMA_TOKEN" and try again.', location);
+        return;
+    }
 
     const prompt = `Work through this problem step by step:
 
