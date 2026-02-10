@@ -1,0 +1,383 @@
+:root {
+  /* Colors */
+  --color-bg: #ffe6f4;
+  --color-grid: rgba(0, 0, 0, 0.04);
+  --color-window: #ffeefc;
+  --color-window-alt: #f4f0ff;
+  --color-titlebar: #ffe88a;
+  --color-titlebar-alt: #d5c4ff;
+  --color-accent: #ff7ec3;
+  --color-accent-alt: #7f7bff;
+  --color-button: #fff3b2;
+  --color-button-alt: #ffd6f5;
+  --color-input-bg: #fffdfc;
+  --color-badge: #fffdc7;
+  --color-text: #111111;
+
+  /* Sizes & radii */
+  --border-thick: 3px;
+  --radius-window: 16px;
+  --radius-soft: 10px;
+  --radius-pill: 999px;
+  --shadow-offset: 6px;
+  --shadow-sm-offset: 3px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+
+  /* Typography */
+  --font-ui: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial,
+    sans-serif;
+  /* Optional pixel-ish fallback if available on system */
+  --font-pixel: "Press Start 2P", "VT323", "Courier New", monospace;
+}
+
+/* ===== Page / Desktop Background ===== */
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-ui);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  /* Light Y2K grid background */
+  background-image: linear-gradient(to right, var(--color-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-grid) 1px, transparent 1px);
+  background-size: 18px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Optional wrapper to center main window */
+.desktop {
+  width: 100%;
+  max-width: 1200px;
+  padding: var(--spacing-lg);
+  display: flex;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* ===== Window + Panels ===== */
+
+.window {
+  position: fixed;
+  top: 30px;
+  left: 30px;
+  width: 100%;
+  max-width: 960px;
+  background: var(--color-window);
+  border: var(--border-thick) solid #000000;
+  border-radius: var(--radius-window);
+  box-shadow: var(--shadow-offset) var(--shadow-offset) 0 rgba(0, 0, 0, 0.7);
+  padding: calc(var(--spacing-xl) + var(--spacing-md)) var(--spacing-xl) var(--spacing-xl);
+  box-sizing: border-box;
+  z-index: 10;
+}
+
+/* Draggable cursor hint (optional) */
+.window-draggable {
+  cursor: move;
+}
+
+/* Title bar (placed inside .window, positioned at the top) */
+.titlebar {
+  position: absolute;
+  inset: var(--spacing-md) var(--spacing-lg) auto var(--spacing-lg);
+  height: 32px;
+  background: var(--color-titlebar);
+  border: var(--border-thick) solid #000000;
+  border-radius: calc(var(--radius-window) - 4px) calc(var(--radius-window) - 4px) 10px 10px;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--spacing-md);
+  box-sizing: border-box;
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+}
+
+/* Alternative lavender titlebar */
+.titlebar--alt {
+  background: var(--color-titlebar-alt);
+}
+
+/* Title text */
+.titlebar-title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Window buttons container */
+.window-buttons {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: var(--spacing-sm);
+}
+
+/* Base window button */
+.window-button {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 2px solid #000000;
+  background: #ffffff;
+  box-shadow: 1px 1px 0 #000000;
+}
+
+/* Color variants for minimize / maximize / close */
+.window-button--minimize {
+  background: #fff3b2;
+}
+
+.window-button--maximize {
+  background: #b6f7ff;
+}
+
+.window-button--close {
+  background: #ff9eb2;
+}
+
+/* Panels / popup cards inside window */
+.panel {
+  position: relative;
+  background: var(--color-window-alt);
+  border: var(--border-thick) solid #000000;
+  border-radius: var(--radius-soft);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm-offset) var(--shadow-sm-offset) 0 rgba(0, 0, 0, 0.6);
+  margin-bottom: var(--spacing-lg);
+}
+
+/* Optional “stacked popup” tilt */
+.panel-tilt-left {
+  transform: rotate(-1.5deg);
+}
+
+.panel-tilt-right {
+  transform: rotate(1.5deg);
+}
+
+/* ===== Typography ===== */
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0 0 var(--spacing-md);
+  font-family: var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 800;
+  text-shadow: 2px 2px 0 #ffffff;
+}
+
+h1 {
+  font-size: 1.6rem;
+}
+
+h2 {
+  font-size: 1.25rem;
+}
+
+p,
+label,
+span {
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+/* Optional pixel style for small elements */
+.pixel-label {
+  font-family: var(--font-pixel);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* ===== Buttons ===== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-pill);
+  border: var(--border-thick) solid #000000;
+  background: var(--color-button);
+  color: #000000;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 800;
+  font-size: 0.85rem;
+  box-shadow: 0 var(--shadow-sm-offset) 0 #000000;
+  cursor: pointer;
+  transform: translateY(0);
+  transition:
+    transform 80ms ease,
+    box-shadow 80ms ease,
+    background-color 120ms ease,
+    filter 120ms ease;
+}
+
+.btn-primary {
+  background: var(--color-accent);
+}
+
+.btn-secondary {
+  background: var(--color-button-alt);
+}
+
+.btn:hover {
+  transform: translateY(1px);
+  box-shadow: 0 calc(var(--shadow-sm-offset) - 2px) 0 #000000;
+  filter: brightness(1.03);
+}
+
+.btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #000000;
+  filter: brightness(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: grayscale(0.2);
+}
+
+/* ===== Inputs ===== */
+
+.input,
+input[type="text"],
+input[type="email"],
+input[type="number"],
+input[type="search"],
+input[type="password"],
+textarea,
+select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-input-bg);
+  border-radius: var(--radius-soft);
+  border: var(--border-thick) solid #000000;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  outline: none;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+.input-sm {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: 0.8rem;
+}
+
+.input:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 3px solid var(--color-accent-alt);
+  outline-offset: 2px;
+  background-color: #ffffff;
+}
+
+/* Labels / field groups */
+.field {
+  margin-bottom: var(--spacing-md);
+}
+
+.field-label {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+/* ===== Badges & Small UI Bits ===== */
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  border: 2px solid #000000;
+  background: var(--color-badge);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+/* “Pop” sticker-style shadow that you can add to many elements */
+.shadow-pop {
+  box-shadow: var(--shadow-offset) var(--shadow-offset) 0 rgba(0, 0, 0, 0.75);
+  transform: translate(-2px, -2px);
+}
+
+/* Optional hover jiggle for cards/badges */
+.shadow-pop-hover:hover {
+  transform: translate(-1px, -1px) rotate(-0.5deg);
+}
+
+/* ===== Layout Helpers ===== */
+
+.stack-v {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.stack-h {
+  display: flex;
+  flex-direction: row;
+  gap: var(--spacing-md);
+}
+
+.stack-h.wrap {
+  flex-wrap: wrap;
+}
+
+.align-center {
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+/* Responsive tweaks */
+@media (max-width: 720px) {
+  .window {
+    max-width: 100%;
+    padding: calc(var(--spacing-xl) + var(--spacing-lg)) var(--spacing-md) var(--spacing-lg);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.7);
+  }
+
+  .titlebar {
+    inset: var(--spacing-sm) var(--spacing-md) auto var(--spacing-md);
+    height: 30px;
+    font-size: 0.7rem;
+  }
+
+  .panel {
+    padding: var(--spacing-md);
+  }
+
+  .stack-h {
+    flex-direction: column;
+  }
+}
