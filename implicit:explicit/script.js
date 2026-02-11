@@ -8,6 +8,18 @@ let statusText = "";
 let items = [];
 let selectedId = null;
 
+/** Offscreen canvas for mosaic effect (reused per frame). */
+let mosaicCanvas = null;
+let mosaicCtx = null;
+
+/** Frame styling (Y2K pastel window). */
+const FRAME_MARGIN = 14;
+const FRAME_RADIUS = 16;
+const FRAME_BORDER = 3;
+const FRAME_COLORS = ["#d5c4ff", "#ffe88a", "#ffd6f5"]; // lavender, yellow, pink
+const IDLE_MS = 10000;       // wait 10s before transition
+const TRANSITION_MS = 6000;  // mosaic + fade duration
+
 let isDragging = false;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
@@ -97,11 +109,16 @@ function onMouseUp() {
 }
 
 function hitTestTopItem(mx, my) {
+    const now = Date.now();
     for (let i = items.length - 1; i >= 0; i--) {
         const it = items[i];
-        if (mx >= it.x && mx <= it.x + it.w && my >= it.y && my <= it.y + it.h) {
-            return it;
-        }
+        if (it.fadeState <= 0) continue;
+        if ((now - it.placedAt) >= IDLE_MS) continue; // no drag during/after transition
+        const fx = it.x - FRAME_MARGIN;
+        const fy = it.y - FRAME_MARGIN;
+        const fw = it.w + FRAME_MARGIN * 2;
+        const fh = it.h + FRAME_MARGIN * 2;
+        if (mx >= fx && mx <= fx + fw && my >= fy && my <= fy + fh) return it;
     }
     return null;
 }
@@ -111,6 +128,56 @@ function bringToFront(id) {
     if (idx === -1) return;
     const [it] = items.splice(idx, 1);
     items.push(it);
+}
+
+function drawFrame(ctx, it) {
+    const fx = it.x - FRAME_MARGIN;
+    const fy = it.y - FRAME_MARGIN;
+    const fw = it.w + FRAME_MARGIN * 2;
+    const fh = it.h + FRAME_MARGIN * 2;
+    const color = FRAME_COLORS[it.frameColorIndex != null ? it.frameColorIndex : 0];
+
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.35)";
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetX = 4;
+    ctx.shadowOffsetY = 4;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.roundRect(fx, fy, fw, fh, FRAME_RADIUS);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = FRAME_BORDER;
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawImageWithMosaic(ctx, it) {
+    if (!it.img || !it.img.complete) return;
+    const { x, y, w, h, img, mosaicLevel } = it;
+
+    if (mosaicLevel <= 0) {
+        ctx.drawImage(img, x, y, w, h);
+        return;
+    }
+
+    const pixelSize = 1 + mosaicLevel * 28;
+    const sw = Math.max(2, Math.floor(w / pixelSize));
+    const sh = Math.max(2, Math.floor(h / pixelSize));
+
+    if (!mosaicCanvas || mosaicCanvas.width < sw || mosaicCanvas.height < sh) {
+        mosaicCanvas = document.createElement("canvas");
+        mosaicCtx = mosaicCanvas.getContext("2d");
+    }
+    mosaicCanvas.width = sw;
+    mosaicCanvas.height = sh;
+    mosaicCtx.drawImage(img, 0, 0, sw, sh);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(mosaicCanvas, 0, 0, sw, sh, x, y, w, h);
+    ctx.imageSmoothingEnabled = true;
 }
 
 function addImageItem(imageUrl, prompt) {
@@ -131,7 +198,11 @@ function addImageItem(imageUrl, prompt) {
             w,
             h,
             vx: (Math.random() * 0.8 - 0.4),
-            vy: (Math.random() * 0.8 - 0.4)
+            vy: (Math.random() * 0.8 - 0.4),
+            placedAt: Date.now(),
+            mosaicLevel: 0,
+            fadeState: 1,
+            frameColorIndex: items.length % FRAME_COLORS.length
         };
 
         items.push(item);
@@ -149,32 +220,63 @@ function addImageItem(imageUrl, prompt) {
 function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    const now = Date.now();
     const topPadding = 70;
 
     for (const it of items) {
-        if (!isDragging || it.id !== selectedId) {
-            it.x += it.vx;
-            it.y += it.vy;
+        if (it.placedAt == null) it.placedAt = now;
+        if (it.mosaicLevel == null) it.mosaicLevel = 0;
+        if (it.fadeState == null) it.fadeState = 1;
+        if (it.frameColorIndex == null) it.frameColorIndex = 0;
 
-            if (it.x < 0) { it.x = 0; it.vx *= -1; }
-            if (it.y < topPadding) { it.y = topPadding; it.vy *= -1; }
-            if (it.x + it.w > canvas.width) { it.x = canvas.width - it.w; it.vx *= -1; }
-            if (it.y + it.h > canvas.height) { it.y = canvas.height - it.h; it.vy *= -1; }
+        const age = now - it.placedAt;
+
+        if (age >= IDLE_MS) {
+            const elapsed = age - IDLE_MS;
+            const t = Math.min(1, elapsed / TRANSITION_MS);
+            it.mosaicLevel = t;
+            it.fadeState = 1 - t;
         }
 
+        if (it.fadeState <= 0) continue;
+
+        if (age < IDLE_MS) {
+            if (!isDragging || it.id !== selectedId) {
+                it.x += it.vx;
+                it.y += it.vy;
+                if (it.x < 0) { it.x = 0; it.vx *= -1; }
+                if (it.y < topPadding) { it.y = topPadding; it.vy *= -1; }
+                if (it.x + it.w > canvas.width) { it.x = canvas.width - it.w; it.vx *= -1; }
+                if (it.y + it.h > canvas.height) { it.y = canvas.height - it.h; it.vy *= -1; }
+            }
+        }
+
+        ctx.save();
+        ctx.globalAlpha = it.fadeState;
+
+        drawFrame(ctx, it);
+
         if (it.img && it.img.complete) {
-            ctx.drawImage(it.img, it.x, it.y, it.w, it.h);
+            drawImageWithMosaic(ctx, it);
         } else {
             ctx.fillStyle = "#eee";
             ctx.fillRect(it.x, it.y, it.w, it.h);
         }
 
-        if (it.id === selectedId) {
+        ctx.restore();
+
+        if (it.id === selectedId && age < IDLE_MS) {
             ctx.strokeStyle = "black";
             ctx.lineWidth = 2;
-            ctx.strokeRect(it.x - 2, it.y - 2, it.w + 4, it.h + 4);
+            const fx = it.x - FRAME_MARGIN;
+            const fy = it.y - FRAME_MARGIN;
+            const fw = it.w + FRAME_MARGIN * 2;
+            const fh = it.h + FRAME_MARGIN * 2;
+            ctx.strokeRect(fx - 2, fy - 2, fw + 4, fh + 4);
         }
     }
+
+    items = items.filter((it) => it.fadeState > 0);
 
     if (statusText) {
         ctx.font = "14px Arial";
@@ -199,10 +301,11 @@ async function askImage(prompt) {
     statusText = "Generating image...";
     document.body.style.cursor = "progress";
 
+    const cartoonPrompt = `${prompt}, cartoon style, illustrated, vibrant colors, 2D animation aesthetic`;
     const data = {
         model: "prunaai/z-image-turbo",
         input: {
-            prompt: prompt
+            prompt: cartoonPrompt
         }
     };
 
