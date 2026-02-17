@@ -1,0 +1,184 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #000;
+  color: #fff;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(white 1px, transparent 1px),
+    radial-gradient(white 1px, transparent 1px);
+  background-size: 140px 140px, 220px 220px;
+  background-position: 0 0, 70px 90px;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 1;
+}
+
+.panel {
+  position: fixed;
+  top: 18px;
+  left: 18px;
+  width: 360px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  z-index: 10;
+}
+
+.panel h1 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.row {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+label {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+input {
+  padding: 8px 10px;
+  background: #000;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+}
+
+.buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+button {
+  padding: 8px 10px;
+  background: #000;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #fff;
+  color: #000;
+}
+
+.small {
+  margin-top: 10px;
+  font-size: 12px;
+  opacity: 0.75;
+  line-height: 1.35;
+}
+
+textarea {
+  padding: 8px 10px;
+  background: #000;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.inspect {
+  position: fixed;
+  right: 18px;
+  top: 18px;
+  width: 320px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  z-index: 10;
+}
+
+.inspect-details {
+  margin-bottom: 14px;
+}
+
+.similarity-section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.similarity-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.similarity-toggle button {
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+.similarity-toggle .toggle-active {
+  background: rgba(255, 255, 255, 0.9);
+  color: #000;
+}
+
+.similarity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.similarity-item {
+  padding: 6px 0;
+  cursor: pointer;
+  opacity: 0.85;
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin-bottom: 2px;
+}
+
+.similarity-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  opacity: 1;
+}
+
+@media (max-width: 900px) {
+  .inspect {
+    display: none;
+  }
+}
