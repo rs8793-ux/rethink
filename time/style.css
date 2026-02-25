@@ -56,7 +56,18 @@ h1{ font-size:28px; margin:0 0 14px; letter-spacing:.2px; }
   margin-bottom:12px;
 }
 
-input, select{
+.row--emotion{
+  grid-template-columns: 1fr;
+  align-items:start;
+}
+.row--emotion .label-inline{
+  font-size:14px;
+  opacity:.9;
+  margin-bottom:6px;
+  display:block;
+}
+
+input, select, textarea{
   width:100%;
   background:#000;
   border:1px solid rgba(255,255,255,.25);
@@ -65,6 +76,10 @@ input, select{
   padding:12px 12px;
   font-size:15px;
   outline:none;
+}
+textarea{
+  resize:vertical;
+  min-height:52px;
 }
 
 button{
@@ -255,5 +270,12 @@ button:disabled{ opacity:.5; cursor:not-allowed; }
 
 .meta .name{ font-weight:600; }
 .meta .small{ font-size:12px; opacity:.75; margin-top:4px; }
+.meta-feeling{
+  font-size:12px;
+  opacity:.85;
+  margin-top:6px;
+  font-style:italic;
+  line-height:1.3;
+}
 
 canvas{ display:none; }

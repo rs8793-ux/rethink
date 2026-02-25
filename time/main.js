@@ -56,6 +56,7 @@ const modelSelect = document.getElementById("modelSelect");
 const styleSelect = document.getElementById("styleSelect");
 const nameInput = document.getElementById("nameInput");
 const dateInput = document.getElementById("dateInput");
+const feelingInput = document.getElementById("feelingInput");
 const video = document.getElementById("video");
 const previewImg = document.getElementById("previewImg");
 const previewLabel = document.getElementById("previewLabel");
@@ -532,6 +533,7 @@ function renderBoard(items) {
     const date = it.birthday || "";
     const sun = it.sun || "";
     const element = it.element || "";
+    const feeling = it.feeling || "";
     const postId = it.id || "";
 
     const h = hashId(postId);
@@ -552,6 +554,7 @@ function renderBoard(items) {
       <div class="meta">
         <div class="name">${escapeHtml(name)}</div>
         <div class="small">${escapeHtml(date)} • ${escapeHtml(sun)} (${escapeHtml(element)})</div>
+        ${feeling ? `<div class="meta-feeling">${escapeHtml(feeling)}</div>` : ""}
       </div>
     `;
     const btn = el.querySelector(".card-delete");
@@ -563,15 +566,19 @@ function renderBoard(items) {
 subscribeBoard();
 
 // ─── Generate + Post ────────────────────────────────────────────────────
-function buildPrompt({ sun, element, style }) {
-  return [
+function buildPrompt({ sun, element, style, feeling }) {
+  const parts = [
     "Turn the input selfie into a clean cartoon portrait card.",
     "Keep face recognizable and friendly.",
     "Black background, minimal stars, white clean typography.",
     `Zodiac theme: ${sun} (${element}).`,
     `Style: ${style}.`,
-    "No watermark. High quality. Centered portrait.",
-  ].join(" ");
+  ];
+  if (feeling && feeling.trim()) {
+    parts.push(`Express this mood or feeling in the character's expression and pose: "${feeling.trim()}".`);
+  }
+  parts.push("No watermark. High quality. Centered portrait.");
+  return parts.join(" ");
 }
 
 async function generateAndPost() {
@@ -596,7 +603,8 @@ async function generateAndPost() {
   const { sun, element } = computeZodiac(birthday);
   const model = modelSelect?.value;
   const style = styleSelect?.value;
-  const prompt = buildPrompt({ sun, element, style });
+  const feeling = feelingInput?.value?.trim() || "";
+  const prompt = buildPrompt({ sun, element, style, feeling });
 
   try {
     postBtn.disabled = true;
@@ -617,6 +625,7 @@ async function generateAndPost() {
       birthday,
       sun,
       element,
+      feeling: feeling || undefined,
       prompt,
       cartoonBase64,
     });
