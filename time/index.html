@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>time</title>
+    <link rel="stylesheet" href="./style.css" />
+</head>
+
+<body>
+    <div class="stars"></div>
+
+    <main class="wrap">
+        <h1>✨ Zodiac Share Board</h1>
+        <p class="sub">Camera selfie → cartoon zodiac card (Replicate proxy) → save to Firestore → everyone can see.</p>
+
+        <section class="panel">
+            <div class="row">
+                <input id="nameInput" placeholder="Your name" value="Jessica" />
+                <input id="dateInput" type="date" value="2005-06-20" />
+                <input id="tokenInput" placeholder="Paste token from itp-ima-replicate-proxy.web.app" />
+                <button id="saveTokenBtn">Save Token</button>
+            </div>
+            <p class="hint" style="margin-top:0;">Get your token at <a href="https://itp-ima-replicate-proxy.web.app/" target="_blank" rel="noopener">itp-ima-replicate-proxy.web.app</a> → paste above → click Save Token.</p>
+
+            <div class="row2">
+                <select id="modelSelect" title="Choose an image-to-image model">
+                    <option value="google/gemini-2.5-flash-image">Google Gemini 2.5 Flash Image</option>
+                    <option value="tencentarc/photomaker">tencentarc/photomaker (portrait)</option>
+                    <option value="tencentarc/photomaker:ddfc2b08d209f9fa8c1eca692712918bd449f695dabb4a958da31802a9570fe4">tencentarc/photomaker with version hash</option>
+                    <option value="stability-ai/sdxl">stability-ai/sdxl (generic)</option>
+                </select>
+
+                <select id="styleSelect">
+                    <option value="clean minimalist cartoon, simple line, soft shading">Minimal Cartoon</option>
+                    <option value="anime style portrait, clean lineart, soft colors">Anime</option>
+                    <option value="pixar-like 3d cartoon portrait, friendly, smooth">3D Cartoon</option>
+                </select>
+
+                <div class="smallRow">
+                    <button id="openBtn">Open Camera</button>
+                    <button id="snapBtn" disabled>Take Photo</button>
+                    <button id="retakeBtn" disabled>Retake</button>
+                    <button id="closeBtn" disabled>Close</button>
+                    <button id="postBtn" disabled>Generate + Post</button>
+                </div>
+            </div>
+
+            <div class="content">
+                <div>
+                    <div class="previewBox">
+                        <video id="video" class="video" playsinline autoplay muted></video>
+                        <img id="previewImg" class="previewImg" alt="selfie preview" />
+                        <div class="previewLabel" id="previewLabel">Camera preview</div>
+                    </div>
+                    <div class="hint">Tip: use a clear face selfie. We only save the generated cartoon to Firestore.
+                    </div>
+                </div>
+
+                <div>
+                    <div class="status" id="status">
+                        Ready. 1) Save token 2) Open Camera 3) Take Photo 4) Generate + Post
+                    </div>
+<div class="hint">
+            If generation fails: open DevTools (F12) → Console and look for “Replicate proxy error” to see the server’s exact message.
+          </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="boardHeader">
+            <h2>📌 Class Board</h2>
+            <div class="pill" id="countPill">0 posts</div>
+        </section>
+
+        <section class="grid" id="grid"></section>
+
+        <canvas id="cap"></canvas>
+    </main>
+
+    <script type="module" src="./main.js"></script>
+</body>
+
+</html>
