@@ -1,6 +1,6 @@
 /**
  * Zodiac Share Board — main entry
- * Multi-user: Firebase Auth (Google).
+ * Multi-user: Firebase Auth (Google). Image generation uses ITP proxy with no token (unauthenticated).
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
@@ -370,7 +370,7 @@ function computeZodiac(dateStr) {
   return { sun, element };
 }
 
-// ─── Replicate proxy (img2img) ─────────────────────────────────────────────
+// ─── Image generation (ITP proxy, no auth token) ───────────────────────────
 /** Max size for data URL (Replicate recommends ≤256KB). Resize image to stay under. */
 const MAX_IMAGE_PX = 512;
 const JPEG_QUALITY_FOR_API = 0.82;
@@ -458,7 +458,7 @@ async function replicateImageToImage({ model, prompt, imageBase64 }) {
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg = json?.error || json?.message || json?.detail || res.statusText || "Request failed";
-    console.error("Replicate proxy error:", res.status, "Response:", json);
+    console.error("Generation error:", res.status, "Response:", json);
     throw new Error(msg);
   }
 
