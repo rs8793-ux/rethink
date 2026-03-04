@@ -2,10 +2,21 @@
 <html lang="en">
 
 <head>
-    <meta charset="utf-8" />
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>time</title>
-    <link rel="stylesheet" href="./style.css" />
+    <meta http-equiv="cache-control" content="no-cache" />
+    <meta http-equiv="expires" content="0" />
+    <title>Zodiac Share Board</title>
+    <link rel="shortcut icon" href="#" />
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.1/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.1/examples/jsm/"
+            }
+        }
+    </script>
 </head>
 
 <body>
@@ -16,19 +27,24 @@
         <p class="sub">Camera selfie → cartoon zodiac card (Replicate proxy) → save to Firestore → everyone can see.</p>
 
         <section class="panel">
-            <div class="row">
+            <div class="auth-row">
+                <div id="authStatus" class="auth-status">Sign in to post.</div>
+                <button type="button" id="signInBtn" class="btn-auth">Sign in with Google</button>
+                <p id="authHint" class="hint auth-hint">Using localhost? Add it in Firebase Console → Authentication → Settings → Authorized domains.</p>
+                <div id="authUser" class="auth-user" hidden>
+                    <img id="authPhoto" class="auth-photo" alt="" />
+                    <span id="authName" class="auth-name"></span>
+                    <button type="button" id="signOutBtn" class="btn-auth btn-signout">Sign out</button>
+                </div>
+            </div>
+            <div class="row row--two">
                 <input id="nameInput" placeholder="Your name" />
                 <input id="dateInput" type="date" />
-                <input id="tokenInput" placeholder="Paste token from itp-ima-replicate-proxy.web.app" />
-                <button id="saveTokenBtn">Save Token</button>
             </div>
             <div class="row row--emotion">
                 <label for="feelingInput" class="label-inline">How you're feeling (shown on your cartoon)</label>
                 <textarea id="feelingInput" placeholder="e.g. I'm grateful and calm today" rows="2"></textarea>
             </div>
-            <p class="hint" style="margin-top:0;">Get your token at <a href="https://itp-ima-replicate-proxy.web.app/"
-                    target="_blank" rel="noopener">itp-ima-replicate-proxy.web.app</a> → paste above → click Save Token.
-            </p>
 
             <div class="row2">
                 <select id="modelSelect" title="Choose an image-to-image model">
@@ -68,7 +84,7 @@
 
                 <div>
                     <div class="status" id="status">
-                        Ready. 1) Save token 2) Open Camera 3) Take Photo 4) Generate + Post
+                        Sign in → Open Camera → Take Photo → Generate + Post
                     </div>
                     <div class="hint">
                         If generation fails: open DevTools (F12) → Console and look for “Replicate proxy error” to see

@@ -1,9 +1,10 @@
 /**
  * Zodiac Share Board — main entry
- * Flow: name + birth date → camera selfie → Replicate img2img → Firestore → shared board
+ * Multi-user: Firebase Auth (Google). Replicate proxy token in code for local dev only.
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 import {
   getFirestore,
   collection,
@@ -17,7 +18,7 @@ import {
   deleteDoc,
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-// ─── Config (paste your Firebase config here) ───────────────────────────────
+// ─── Config ─────────────────────────────────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyDq9J1FHvKapMrudjGme9vCWsOskJBgiT8",
   authDomain: "sharemind-29201.firebaseapp.com",
@@ -28,10 +29,12 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
 
 // ─── Constants ──────────────────────────────────────────────────────────────
-const TOKEN_KEY = "replicate_proxy_token_v1";
+/** Replicate proxy token for local dev only. Do not commit. Get from itp-ima-replicate-proxy.web.app */
+const REPLICATE_PROXY_TOKEN = "";
 const POSTS_COL = "posts";
 
 /** Preferred video size for capture (Replicate often expects reasonable resolution) */
@@ -50,8 +53,13 @@ const closeBtn = document.getElementById("closeBtn");
 const snapBtn = document.getElementById("snapBtn");
 const retakeBtn = document.getElementById("retakeBtn");
 const postBtn = document.getElementById("postBtn");
-const saveTokenBtn = document.getElementById("saveTokenBtn");
-const tokenInput = document.getElementById("tokenInput");
+const signInBtn = document.getElementById("signInBtn");
+const signOutBtn = document.getElementById("signOutBtn");
+const authStatus = document.getElementById("authStatus");
+const authUser = document.getElementById("authUser");
+const authPhoto = document.getElementById("authPhoto");
+const authName = document.getElementById("authName");
+const authHint = document.getElementById("authHint");
 const modelSelect = document.getElementById("modelSelect");
 const styleSelect = document.getElementById("styleSelect");
 const nameInput = document.getElementById("nameInput");
@@ -71,6 +79,7 @@ const ctx = cap ? cap.getContext("2d") : null;
 // ─── State ─────────────────────────────────────────────────────────────────
 let mediaStream = null;
 let selfieBase64 = null;
+let currentUser = null;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 function setStatus(msg) {
@@ -104,35 +113,46 @@ function showPhotoCaptured() {
   if (previewLabel) previewLabel.textContent = "Selfie captured";
 }
 
-// ─── Token (local only) ────────────────────────────────────────────────────
-/** Remove common paste artifacts (semicolons, commas, newlines) so the JWT is valid */
-function sanitizeToken(raw) {
-  if (typeof raw !== "string") return "";
-  return raw
-    .trim()
-    .replace(/[;,]\s*$/, "")   // trailing semicolon or comma
-    .replace(/\s+/g, "")       // any stray spaces/newlines in the middle
-    .trim();
-}
+// ─── Auth ──────────────────────────────────────────────────────────────────
+let lastBoardItems = [];
 
-function loadToken() {
-  const t = localStorage.getItem(TOKEN_KEY);
-  if (tokenInput && t) tokenInput.value = t;
-}
-
-function saveToken() {
-  const t = sanitizeToken(tokenInput?.value ?? "");
-  if (!t) {
-    setStatus("Paste your token in the box first (get it from itp-ima-replicate-proxy.web.app).");
-    return;
+function updateAuthUI(user) {
+  currentUser = user;
+  if (authStatus) authStatus.hidden = !!user;
+  if (signInBtn) signInBtn.hidden = !!user;
+  if (authHint) authHint.hidden = !!user;
+  if (authUser) authUser.hidden = !user;
+  if (user) {
+    if (authPhoto) { authPhoto.src = user.photoURL || ""; authPhoto.alt = user.displayName || ""; }
+    if (authName) authName.textContent = user.displayName || user.email || "Signed in";
   }
-  localStorage.setItem(TOKEN_KEY, t);
-  if (tokenInput) tokenInput.value = t;
-  setStatus("Token saved. You can now Open Camera → Take Photo → Generate + Post.");
+  if (postBtn) postBtn.disabled = !user;
+  if (lastBoardItems.length) renderBoard(lastBoardItems);
 }
 
-if (saveTokenBtn) saveTokenBtn.addEventListener("click", saveToken);
-loadToken();
+onAuthStateChanged(auth, (user) => {
+  updateAuthUI(user);
+});
+
+if (signInBtn) signInBtn.addEventListener("click", () => {
+  setStatus("Opening sign-in…");
+  signInWithPopup(auth, new GoogleAuthProvider())
+    .then(() => { setStatus("Signed in. Open Camera → Take Photo → Generate + Post."); })
+    .catch((err) => {
+      console.error("Sign in error:", err.code, err.message);
+      const code = err?.code || "";
+      if (code === "auth/unauthorized-domain") {
+        setStatus("This URL is not allowed. Add it in Firebase Console → Auth → Settings → Authorized domains (e.g. localhost).");
+      } else if (code === "auth/popup-closed-by-user") {
+        setStatus("Sign-in cancelled or popup blocked. Try again or allow popups.");
+      } else if (code === "auth/cancelled-popup-request") {
+        setStatus("Sign-in in progress. Wait or try once.");
+      } else {
+        setStatus("Sign-in failed: " + (err?.message || code || "Unknown error"));
+      }
+    });
+});
+if (signOutBtn) signOutBtn.addEventListener("click", () => { signOut(auth); });
 
 // ─── Camera ───────────────────────────────────────────────────────────────
 
@@ -422,11 +442,10 @@ function buildReplicateInput(model, prompt, imageDataUrl) {
   };
 }
 
-async function replicateImageToImage({ token, model, prompt, imageBase64 }) {
+async function replicateImageToImage({ model, prompt, imageBase64 }) {
   const url = "https://itp-ima-replicate-proxy.web.app/api/create_n_get";
-
-  const cleanToken = sanitizeToken(token);
-  if (!cleanToken) throw new Error("Token is empty. Paste a valid token and click Save Token.");
+  const token = String(REPLICATE_PROXY_TOKEN || "").trim();
+  if (!token) throw new Error("Replicate proxy token not set. Add REPLICATE_PROXY_TOKEN in main.js for local dev.");
 
   const resizedImage = await resizeDataUrlToDataUrl(imageBase64);
   const input = buildReplicateInput(model, prompt, resizedImage);
@@ -437,7 +456,7 @@ async function replicateImageToImage({ token, model, prompt, imageBase64 }) {
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
-      Authorization: `Bearer ${cleanToken}`,
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(payload),
   });
@@ -446,7 +465,7 @@ async function replicateImageToImage({ token, model, prompt, imageBase64 }) {
   if (!res.ok) {
     const msg = json?.error || json?.message || json?.detail || res.statusText || "Request failed";
     console.error("Replicate proxy error:", res.status, "Response:", json);
-    if (res.status === 401) throw new Error("Token invalid or expired. Get a new token at itp-ima-replicate-proxy.web.app and Save Token.");
+    if (res.status === 401) throw new Error("Replicate proxy token invalid or expired. Update REPLICATE_PROXY_TOKEN in main.js.");
     throw new Error(msg);
   }
 
@@ -478,6 +497,10 @@ async function savePostToFirestore(post) {
   const colRef = collection(db, POSTS_COL);
   const docRef = await addDoc(colRef, {
     ...post,
+    uid: post.uid,
+    displayName: post.displayName ?? null,
+    email: post.email ?? null,
+    photoURL: post.photoURL ?? null,
     createdAt: serverTimestamp(),
   });
   return docRef.id;
@@ -494,6 +517,7 @@ function subscribeBoard() {
     (snap) => {
       const items = [];
       snap.forEach((doc) => items.push({ id: doc.id, ...doc.data() }));
+      lastBoardItems = items;
       renderBoard(items);
     },
     (err) => {
@@ -529,12 +553,13 @@ function renderBoard(items) {
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
     const imgSrc = it.cartoonBase64 || "";
-    const name = it.name || "Anonymous";
+    const authorName = it.displayName || it.name || "Anonymous";
     const date = it.birthday || "";
     const sun = it.sun || "";
     const element = it.element || "";
     const feeling = it.feeling || "";
     const postId = it.id || "";
+    const isOwner = currentUser && it.uid === currentUser.uid;
 
     const h = hashId(postId);
     const rot = (h % 7) - 3;
@@ -549,10 +574,10 @@ function renderBoard(items) {
     el.style.setProperty("--dy", `${dy}px`);
     el.style.setProperty("--z", String(h % 10));
     el.innerHTML = `
-      <button type="button" class="card-delete" title="Delete post" aria-label="Delete post">×</button>
+      ${isOwner ? `<button type="button" class="card-delete" title="Delete post" aria-label="Delete post">×</button>` : ""}
       <img src="${imgSrc}" alt="cartoon" loading="lazy" />
       <div class="meta">
-        <div class="name">${escapeHtml(name)}</div>
+        <div class="name">${escapeHtml(authorName)}</div>
         <div class="small">${escapeHtml(date)} • ${escapeHtml(sun)} (${escapeHtml(element)})</div>
         ${feeling ? `<div class="meta-feeling">${escapeHtml(feeling)}</div>` : ""}
       </div>
@@ -582,15 +607,12 @@ function buildPrompt({ sun, element, style, feeling }) {
 }
 
 async function generateAndPost() {
-  const name = nameInput?.value?.trim() || "Anonymous";
-  const birthday = dateInput?.value;
-  const token = sanitizeToken(tokenInput?.value || localStorage.getItem(TOKEN_KEY) || "");
-
-  if (!token) {
-    setStatus("Missing token. Get one at itp-ima-replicate-proxy.web.app → paste above → click Save Token.");
-    tokenInput?.focus();
+  if (!currentUser) {
+    setStatus("Sign in with Google to post.");
     return;
   }
+  const name = nameInput?.value?.trim() || currentUser.displayName || "Anonymous";
+  const birthday = dateInput?.value;
   if (!birthday) {
     setStatus("Pick your birthday first.");
     return;
@@ -611,7 +633,6 @@ async function generateAndPost() {
     setStatus("Generating cartoon…");
 
     const imageUrl = await replicateImageToImage({
-      token,
       model,
       prompt,
       imageBase64: selfieBase64,
@@ -621,6 +642,10 @@ async function generateAndPost() {
     const cartoonBase64 = await imageUrlToBase64(imageUrl);
 
     await savePostToFirestore({
+      uid: currentUser.uid,
+      displayName: currentUser.displayName ?? null,
+      email: currentUser.email ?? null,
+      photoURL: currentUser.photoURL ?? null,
       name,
       birthday,
       sun,
@@ -644,4 +669,4 @@ async function generateAndPost() {
 if (postBtn) postBtn.addEventListener("click", generateAndPost);
 
 // ─── Initial status ────────────────────────────────────────────────────────
-setStatus("1) Save token  2) Open Camera  3) Take Photo  4) Generate + Post");
+setStatus("Sign in → Open Camera → Take Photo → Generate + Post");

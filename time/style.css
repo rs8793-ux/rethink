@@ -40,6 +40,32 @@ h1{ font-size:28px; margin:0 0 14px; letter-spacing:.2px; }
   backdrop-filter: blur(6px);
 }
 
+.auth-row{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:10px;
+  margin-bottom:14px;
+  padding-bottom:12px;
+  border-bottom:1px solid rgba(255,255,255,.12);
+}
+.auth-hint{ margin:0; width:100%; }
+.auth-status{ font-size:14px; opacity:.8; }
+.auth-user{ display:flex; align-items:center; gap:10px; }
+.auth-photo{ width:28px; height:28px; border-radius:50%; object-fit:cover; }
+.auth-name{ font-size:14px; opacity:.9; }
+.btn-auth{
+  background:#000;
+  color:#fff;
+  border:1px solid rgba(255,255,255,.35);
+  border-radius:10px;
+  padding:8px 14px;
+  font-size:14px;
+  cursor:pointer;
+}
+.btn-auth:hover{ border-color: rgba(255,255,255,.6); }
+.btn-signout{ opacity:.9; }
+
 .row{
   display:grid;
   grid-template-columns: 1.1fr 1fr 1.3fr auto;
@@ -47,6 +73,7 @@ h1{ font-size:28px; margin:0 0 14px; letter-spacing:.2px; }
   align-items:center;
   margin-bottom:12px;
 }
+.row--two{ grid-template-columns: 1fr 1fr; }
 
 .row2{
   display:grid;
