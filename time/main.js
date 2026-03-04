@@ -1,6 +1,6 @@
 /**
  * Zodiac Share Board — main entry
- * Multi-user: Firebase Auth (Google). Replicate proxy token in code for local dev only.
+ * Multi-user: Firebase Auth (Google).
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
@@ -33,8 +33,6 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // ─── Constants ──────────────────────────────────────────────────────────────
-/** Replicate proxy token for local dev only. Do not commit. Get from itp-ima-replicate-proxy.web.app */
-const REPLICATE_PROXY_TOKEN = "";
 const POSTS_COL = "posts";
 
 /** Preferred video size for capture (Replicate often expects reasonable resolution) */
@@ -443,8 +441,6 @@ function buildReplicateInput(model, prompt, imageDataUrl) {
 
 async function replicateImageToImage({ model, prompt, imageBase64 }) {
   const url = "https://itp-ima-replicate-proxy.web.app/api/create_n_get";
-  const token = String(REPLICATE_PROXY_TOKEN || "").trim();
-  if (!token) throw new Error("Replicate proxy token not set. Add REPLICATE_PROXY_TOKEN in main.js for local dev.");
 
   const resizedImage = await resizeDataUrlToDataUrl(imageBase64);
   const input = buildReplicateInput(model, prompt, resizedImage);
@@ -455,7 +451,6 @@ async function replicateImageToImage({ model, prompt, imageBase64 }) {
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
-      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(payload),
   });
@@ -464,7 +459,6 @@ async function replicateImageToImage({ model, prompt, imageBase64 }) {
   if (!res.ok) {
     const msg = json?.error || json?.message || json?.detail || res.statusText || "Request failed";
     console.error("Replicate proxy error:", res.status, "Response:", json);
-    if (res.status === 401) throw new Error("Replicate proxy token invalid or expired. Update REPLICATE_PROXY_TOKEN in main.js.");
     throw new Error(msg);
   }
 
@@ -657,9 +651,7 @@ async function generateAndPost() {
     setStatus(`Posted: ${name} • ${sun} (${element})`);
   } catch (err) {
     console.error("Generate/Post error:", err);
-    const msg = err?.message || String(err);
-    if (msg.startsWith("Token")) setStatus(msg);
-    else setStatus(`Failed: ${msg}`);
+    setStatus(`Failed: ${err?.message || String(err)}`);
   } finally {
     if (postBtn) postBtn.disabled = false;
   }
