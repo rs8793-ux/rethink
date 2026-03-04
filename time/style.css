@@ -74,6 +74,8 @@ h1{ font-size:28px; margin:0 0 14px; letter-spacing:.2px; }
   margin-bottom:12px;
 }
 .row--two{ grid-template-columns: 1fr 1fr; }
+.row--one{ grid-template-columns: auto 1fr; }
+.row--one .label-inline{ margin-bottom:0; }
 
 .row2{
   display:grid;

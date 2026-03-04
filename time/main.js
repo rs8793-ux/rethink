@@ -62,7 +62,6 @@ const authName = document.getElementById("authName");
 const authHint = document.getElementById("authHint");
 const modelSelect = document.getElementById("modelSelect");
 const styleSelect = document.getElementById("styleSelect");
-const nameInput = document.getElementById("nameInput");
 const dateInput = document.getElementById("dateInput");
 const feelingInput = document.getElementById("feelingInput");
 const video = document.getElementById("video");
@@ -611,7 +610,7 @@ async function generateAndPost() {
     setStatus("Sign in with Google to post.");
     return;
   }
-  const name = nameInput?.value?.trim() || currentUser.displayName || "Anonymous";
+  const name = currentUser.displayName || currentUser.email || "Anonymous";
   const birthday = dateInput?.value;
   if (!birthday) {
     setStatus("Pick your birthday first.");
