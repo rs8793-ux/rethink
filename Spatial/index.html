@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sound Wave Frozen</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="hero glass">
+        <h1>Sound Wave Frozen</h1>
+        <p>Record your voice and freeze it into a 3D sculpture</p>
+      </header>
+
+      <section class="top-panels">
+        <article class="auth-panel glass">
+          <div class="panel-title">Shared Space Access</div>
+          <div id="userInfo" class="user-info hidden">
+            <img id="userPhoto" alt="User profile" />
+            <div class="user-text">
+              <strong id="userName">-</strong>
+              <span id="userEmail">-</span>
+            </div>
+          </div>
+          <div class="auth-actions">
+            <button id="loginBtn">Sign in with Google</button>
+            <button id="logoutBtn" disabled>Sign out</button>
+          </div>
+        </article>
+
+        <article class="controls-panel glass">
+          <div class="panel-title">Voice Capture</div>
+          <div class="controls">
+            <button id="micBtn" disabled>Enable Microphone</button>
+            <button id="startBtn" disabled>Start Recording</button>
+            <button id="stopBtn" disabled>Stop Recording</button>
+            <button id="generateBtn" disabled>Generate Sculpture</button>
+            <button id="publishBtn" disabled>Publish to Shared Board</button>
+            <button id="resetBtn" disabled>Reset</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="status-wrap glass">
+        <div class="status-label">Status</div>
+        <div id="statusText" class="status-text">Sign in to record and publish your voice sculpture.</div>
+      </section>
+
+      <section class="debug-panel glass">
+        <h2>Debug</h2>
+        <div><span>Average Volume</span><strong id="avgVolume">-</strong></div>
+        <div><span>Dominant Frequency</span><strong id="domFreq">-</strong></div>
+        <div><span>Dynamic Range</span><strong id="dynRange">-</strong></div>
+        <div><span>Frames</span><strong id="frameCount">0</strong></div>
+      </section>
+
+      <section id="canvasContainer" class="canvas-container"></section>
+    </div>
+
+    <div id="tooltip" class="tooltip hidden"></div>
+    <script type="module" src="./script.js"></script>
+  </body>
+</html>

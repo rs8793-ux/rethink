@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MYCO</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="photo-page" class="photo-page">
+    <div class="photo-page-mushroom" aria-hidden="true">🍄</div>
+    <p class="photo-page-text">Add a photo of yourself.<br />Your mushroom starts with you.</p>
+    <label class="photo-page-upload" for="photo-page-input">choose photo</label>
+    <input type="file" id="photo-page-input" accept="image/*" hidden />
+  </div>
+  <div id="questions-page" class="questions-page">
+    <div class="questions-mushroom" aria-hidden="true">🍄</div>
+    <p id="question-text" class="question-text"></p>
+    <textarea id="question-input" class="question-input" rows="4" placeholder=""></textarea>
+    <button type="button" id="question-next" class="question-next" tabindex="-1">next →</button>
+    <div id="question-progress" class="question-progress"></div>
+  </div>
+  <div id="forest-page" class="forest-page" hidden>
+    <canvas id="forest"></canvas>
+    <button type="button" id="upload-btn" class="upload-btn" title="Upload photo">+</button>
+    <input type="file" id="upload-input" accept="image/*" hidden />
+    <div class="ground-bar">
+      <input
+        id="transmit"
+        type="text"
+        placeholder="transmit..."
+        autocomplete="off"
+        maxlength="200"
+      />
+    </div>
+  </div>
+  <script src="api.js"></script>
+  <script src="questions.js"></script>
+  <script src="forest.js"></script>
+  <script src="matching.js"></script>
+  <script src="chat.js"></script>
+  <script src="upload.js"></script>
+</body>
+</html>
