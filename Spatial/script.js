@@ -66,6 +66,9 @@ isSupported()
 const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
+provider.setCustomParameters({ prompt: "select_account" });
+provider.addScope("profile");
+provider.addScope("email");
 const sculpturesCol = collection(db, "voice_sculptures");
 
 const state = {
@@ -104,26 +107,39 @@ const sceneState = {
   sculptures: new Map(),
 };
 
-initThree();
+// Bind auth + controls before Three.js so a WebGL/init failure does not skip listeners.
 bindUI();
 attachAuthListener();
+try {
+  initThree();
+} catch (err) {
+  console.error("[Three.js] init failed:", err);
+  setStatus("3D view failed to start. You can still try signing in—check the console.");
+}
 listenToSculptures();
 updateButtons();
 animate();
 
 function bindUI() {
-  ui.loginBtn.addEventListener("click", handleLogin);
-  ui.logoutBtn.addEventListener("click", handleLogout);
-  ui.micBtn.addEventListener("click", setupMicrophone);
-  ui.startBtn.addEventListener("click", startRecording);
-  ui.stopBtn.addEventListener("click", stopRecording);
-  ui.generateBtn.addEventListener("click", generateDraftSculpture);
-  ui.publishBtn.addEventListener("click", publishDraft);
-  ui.resetBtn.addEventListener("click", resetDraft);
+  if (!ui.loginBtn || !ui.logoutBtn) {
+    console.error("[bindUI] Missing #loginBtn or #logoutBtn; Google sign-in will not work.");
+  }
+  if (!ui.canvasContainer) {
+    console.error("[bindUI] Missing #canvasContainer.");
+  }
 
-  ui.canvasContainer.addEventListener("pointermove", onPointerMove);
-  ui.canvasContainer.addEventListener("pointerleave", onPointerLeave);
-  ui.canvasContainer.addEventListener("click", onCanvasClick);
+  ui.loginBtn?.addEventListener("click", handleLogin);
+  ui.logoutBtn?.addEventListener("click", handleLogout);
+  ui.micBtn?.addEventListener("click", setupMicrophone);
+  ui.startBtn?.addEventListener("click", startRecording);
+  ui.stopBtn?.addEventListener("click", stopRecording);
+  ui.generateBtn?.addEventListener("click", generateDraftSculpture);
+  ui.publishBtn?.addEventListener("click", publishDraft);
+  ui.resetBtn?.addEventListener("click", resetDraft);
+
+  ui.canvasContainer?.addEventListener("pointermove", onPointerMove);
+  ui.canvasContainer?.addEventListener("pointerleave", onPointerLeave);
+  ui.canvasContainer?.addEventListener("click", onCanvasClick);
 }
 
 function attachAuthListener() {
@@ -143,12 +159,44 @@ function attachAuthListener() {
   });
 }
 
-async function handleLogin() {
+async function handleLogin(event) {
+  event?.preventDefault?.();
+  console.log("[Firebase Auth] Sign in clicked.");
+
+  if (!ui.loginBtn) {
+    console.error("[Firebase Auth] loginBtn missing from DOM.");
+    return;
+  }
+  if (ui.loginBtn.disabled) {
+    console.warn("[Firebase Auth] Login button is disabled (already signed in?).");
+    return;
+  }
+
   try {
-    await signInWithPopup(auth, provider);
+    console.log("[Firebase Auth] Calling signInWithPopup(auth, provider)…");
+    const credential = await signInWithPopup(auth, provider);
+    console.log("[Firebase Auth] signInWithPopup resolved.", {
+      uid: credential?.user?.uid,
+      email: credential?.user?.email,
+    });
   } catch (err) {
-    console.error(err);
-    setStatus("Google sign-in failed. Please try again.");
+    console.error("[Firebase Auth] signInWithPopup failed:", {
+      code: err?.code,
+      message: err?.message,
+      customData: err?.customData,
+      name: err?.name,
+      stack: err?.stack,
+      fullError: err,
+    });
+    if (err?.code === "auth/popup-blocked") {
+      setStatus("Pop-up was blocked. Allow pop-ups for this site and try again.");
+    } else if (err?.code === "auth/popup-closed-by-user") {
+      setStatus("Sign-in window was closed before finishing.");
+    } else if (err?.code === "auth/unauthorized-domain") {
+      setStatus("This domain is not authorized for Firebase Auth. Add it in Firebase Console → Authentication → Settings.");
+    } else {
+      setStatus(`Google sign-in failed${err?.code ? ` (${err.code})` : ""}. See console for details.`);
+    }
   }
 }
 
@@ -157,7 +205,11 @@ async function handleLogout() {
     await signOut(auth);
     resetDraft();
   } catch (err) {
-    console.error(err);
+    console.error("[Firebase Auth] signOut failed:", {
+      code: err?.code,
+      message: err?.message,
+      fullError: err,
+    });
     setStatus("Sign out failed. Please try again.");
   }
 }
@@ -563,14 +615,14 @@ function addBoardSculpture(id, data) {
 
 function updateButtons() {
   const logged = !!state.user;
-  ui.loginBtn.disabled = logged;
-  ui.logoutBtn.disabled = !logged;
-  ui.micBtn.disabled = !logged || state.micReady || state.recording;
-  ui.startBtn.disabled = !logged || !state.micReady || state.recording;
-  ui.stopBtn.disabled = !state.recording;
-  ui.generateBtn.disabled = !logged || state.recording || state.frames.length < 3;
-  ui.publishBtn.disabled = !logged || !state.draft || state.recording;
-  ui.resetBtn.disabled = (!state.frames.length && !state.draft) || state.recording;
+  if (ui.loginBtn) ui.loginBtn.disabled = logged;
+  if (ui.logoutBtn) ui.logoutBtn.disabled = !logged;
+  if (ui.micBtn) ui.micBtn.disabled = !logged || state.micReady || state.recording;
+  if (ui.startBtn) ui.startBtn.disabled = !logged || !state.micReady || state.recording;
+  if (ui.stopBtn) ui.stopBtn.disabled = !state.recording;
+  if (ui.generateBtn) ui.generateBtn.disabled = !logged || state.recording || state.frames.length < 3;
+  if (ui.publishBtn) ui.publishBtn.disabled = !logged || !state.draft || state.recording;
+  if (ui.resetBtn) ui.resetBtn.disabled = (!state.frames.length && !state.draft) || state.recording;
 }
 
 function resetDraft() {
@@ -708,6 +760,9 @@ function updateHover() {
 // Animation loop for drift, rotation, pulse, intro camera, and hover effects.
 function animate() {
   requestAnimationFrame(animate);
+  if (!sceneState.renderer || !sceneState.scene || !sceneState.camera) {
+    return;
+  }
   const t = sceneState.clock.getElapsedTime();
 
   if (sceneState.intro < 1) {
@@ -758,6 +813,7 @@ function animate() {
 }
 
 function onResize() {
+  if (!sceneState.renderer || !sceneState.camera || !ui.canvasContainer) return;
   const w = ui.canvasContainer.clientWidth;
   const h = ui.canvasContainer.clientHeight;
   sceneState.camera.aspect = w / h;
