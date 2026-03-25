@@ -34,27 +34,31 @@ const MAX_RECORD_MS = 20_000;
 const MAX_SCULPTURES = 40;
 const BOARD_BOUNDS = 20;
 
-const ui = {
-  loginBtn: document.getElementById("loginBtn"),
-  logoutBtn: document.getElementById("logoutBtn"),
-  userInfo: document.getElementById("userInfo"),
-  userPhoto: document.getElementById("userPhoto"),
-  userName: document.getElementById("userName"),
-  userEmail: document.getElementById("userEmail"),
-  micBtn: document.getElementById("micBtn"),
-  startBtn: document.getElementById("startBtn"),
-  stopBtn: document.getElementById("stopBtn"),
-  generateBtn: document.getElementById("generateBtn"),
-  publishBtn: document.getElementById("publishBtn"),
-  resetBtn: document.getElementById("resetBtn"),
-  statusText: document.getElementById("statusText"),
-  avgVolume: document.getElementById("avgVolume"),
-  domFreq: document.getElementById("domFreq"),
-  dynRange: document.getElementById("dynRange"),
-  frameCount: document.getElementById("frameCount"),
-  canvasContainer: document.getElementById("canvasContainer"),
-  tooltip: document.getElementById("tooltip"),
-};
+/** Filled in bootstrap() after DOM is ready (avoids null refs + missed listeners). */
+const ui = {};
+
+function cacheDomRefs() {
+  Object.assign(ui, {
+    loginBtn: document.getElementById("loginBtn"),
+    logoutBtn: document.getElementById("logoutBtn"),
+    userInfo: document.getElementById("userInfo"),
+    userPhoto: document.getElementById("userPhoto"),
+    userName: document.getElementById("userName"),
+    userEmail: document.getElementById("userEmail"),
+    startBtn: document.getElementById("startBtn"),
+    stopBtn: document.getElementById("stopBtn"),
+    generateBtn: document.getElementById("generateBtn"),
+    publishBtn: document.getElementById("publishBtn"),
+    resetBtn: document.getElementById("resetBtn"),
+    statusText: document.getElementById("statusText"),
+    avgVolume: document.getElementById("avgVolume"),
+    domFreq: document.getElementById("domFreq"),
+    dynRange: document.getElementById("dynRange"),
+    frameCount: document.getElementById("frameCount"),
+    canvasContainer: document.getElementById("canvasContainer"),
+    tooltip: document.getElementById("tooltip"),
+  });
+}
 
 const app = initializeApp(firebaseConfig);
 // Analytics when the browser supports it (avoids hard failures in restricted environments).
@@ -74,6 +78,7 @@ const sculpturesCol = collection(db, "voice_sculptures");
 const state = {
   user: null,
   micReady: false,
+  audioStarting: false,
   recording: false,
   frames: [],
   draft: null,
@@ -108,18 +113,32 @@ const sceneState = {
   sculptures: new Map(),
 };
 
-// Bind auth + controls before Three.js so a WebGL/init failure does not skip listeners.
-bindUI();
-attachAuthListener();
-try {
-  initThree();
-} catch (err) {
-  console.error("[Three.js] init failed:", err);
-  setStatus("3D view failed to start. You can still try signing in—check the console.");
+function bootstrap() {
+  cacheDomRefs();
+
+  const missing = ["loginBtn", "logoutBtn", "startBtn", "canvasContainer", "statusText"].filter((k) => !ui[k]);
+  if (missing.length) {
+    console.error("[bootstrap] Missing DOM nodes:", missing.join(", "));
+  }
+
+  bindUI();
+  attachAuthListener();
+  try {
+    initThree();
+  } catch (err) {
+    console.error("[Three.js] init failed:", err);
+    setStatus("3D view failed to start. You can still try signing in—check the console.");
+  }
+  listenToSculptures();
+  updateButtons();
+  animate();
 }
-listenToSculptures();
-updateButtons();
-animate();
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", bootstrap, { once: true });
+} else {
+  bootstrap();
+}
 
 function bindUI() {
   if (!ui.loginBtn || !ui.logoutBtn) {
@@ -129,18 +148,19 @@ function bindUI() {
     console.error("[bindUI] Missing #canvasContainer.");
   }
 
-  ui.loginBtn?.addEventListener("click", handleLogin);
-  ui.logoutBtn?.addEventListener("click", handleLogout);
-  ui.micBtn?.addEventListener("click", setupMicrophone);
-  ui.startBtn?.addEventListener("click", startRecording);
-  ui.stopBtn?.addEventListener("click", stopRecording);
-  ui.generateBtn?.addEventListener("click", generateDraftSculpture);
-  ui.publishBtn?.addEventListener("click", publishDraft);
-  ui.resetBtn?.addEventListener("click", resetDraft);
+  if (ui.loginBtn) ui.loginBtn.addEventListener("click", handleLogin);
+  if (ui.logoutBtn) ui.logoutBtn.addEventListener("click", handleLogout);
+  if (ui.startBtn) ui.startBtn.addEventListener("click", () => void startRecording());
+  if (ui.stopBtn) ui.stopBtn.addEventListener("click", stopRecording);
+  if (ui.generateBtn) ui.generateBtn.addEventListener("click", generateDraftSculpture);
+  if (ui.publishBtn) ui.publishBtn.addEventListener("click", () => void publishDraft());
+  if (ui.resetBtn) ui.resetBtn.addEventListener("click", resetDraft);
 
-  ui.canvasContainer?.addEventListener("pointermove", onPointerMove);
-  ui.canvasContainer?.addEventListener("pointerleave", onPointerLeave);
-  ui.canvasContainer?.addEventListener("click", onCanvasClick);
+  if (ui.canvasContainer) {
+    ui.canvasContainer.addEventListener("pointermove", onPointerMove);
+    ui.canvasContainer.addEventListener("pointerleave", onPointerLeave);
+    ui.canvasContainer.addEventListener("click", onCanvasClick);
+  }
 }
 
 function statusLoggedIn() {
@@ -226,37 +246,62 @@ async function handleLogout() {
   }
 }
 
-// Microphone setup using AnalyserNode for FFT and waveform capture.
-async function setupMicrophone() {
-  if (state.micReady) return;
-
-  setStatus("Requesting microphone permission...");
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const source = ctx.createMediaStreamSource(stream);
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = 512;
-    analyser.smoothingTimeConstant = 0.72;
-    source.connect(analyser);
-
-    audio.ctx = ctx;
-    audio.analyser = analyser;
-    audio.stream = stream;
-    audio.freqData = new Uint8Array(analyser.frequencyBinCount);
-    audio.timeData = new Uint8Array(analyser.fftSize);
-
-    state.micReady = true;
-    setStatus("Microphone ready.");
-  } catch (err) {
-    console.error(err);
-    setStatus("Microphone permission denied. Please allow access and try again.");
+// Microphone + AnalyserNode: called automatically the first time user clicks Record.
+async function ensureMicrophoneAndAnalyser() {
+  if (state.micReady && audio.analyser && audio.ctx) {
+    if (audio.ctx.state === "suspended") await audio.ctx.resume();
+    return;
   }
-  updateButtons();
+
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const source = ctx.createMediaStreamSource(stream);
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 512;
+  analyser.smoothingTimeConstant = 0.72;
+  source.connect(analyser);
+
+  audio.ctx = ctx;
+  audio.analyser = analyser;
+  audio.stream = stream;
+  audio.freqData = new Uint8Array(analyser.frequencyBinCount);
+  audio.timeData = new Uint8Array(analyser.fftSize);
+
+  if (ctx.state === "suspended") await ctx.resume();
+
+  state.micReady = true;
 }
 
-function startRecording() {
-  if (!state.micReady || state.recording) return;
+async function startRecording() {
+  if (state.recording || state.audioStarting) return;
+
+  if (!state.micReady) {
+    state.audioStarting = true;
+    updateButtons();
+    setStatus("Requesting microphone…");
+    try {
+      await ensureMicrophoneAndAnalyser();
+    } catch (err) {
+      console.error(err);
+      setStatus("Microphone permission denied. Please allow access and try again.");
+      state.audioStarting = false;
+      updateButtons();
+      return;
+    }
+    state.audioStarting = false;
+    updateButtons();
+  }
+
+  if (state.recording) return;
+
+  if (audio.ctx?.state === "suspended") {
+    try {
+      await audio.ctx.resume();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   state.recording = true;
   state.frames = [];
   state.draft = null;
@@ -680,49 +725,49 @@ function updateButtons() {
 
   const micReady = state.micReady;
   const isRecording = state.recording;
+  const audioStarting = state.audioStarting;
   const hasRecording = state.frames.length >= 3;
   const hasGeneratedSculpture = !!state.draft;
 
-  // --- Auth-only (never use this for mic / record / generate / reset) ---
+  // --- Auth-only (never use this for record / generate / reset) ---
   if (ui.loginBtn) ui.loginBtn.disabled = logged;
   if (ui.logoutBtn) ui.logoutBtn.disabled = !logged;
 
-  // --- Voice pipeline: mic / record / generate / reset — NOT gated on login ---
-  const micDisabled = micReady || isRecording;
-  const startDisabled = !micReady || isRecording;
+  // --- Voice pipeline: Record requests mic on first use; NOT gated on login ---
+  const startDisabled = isRecording || audioStarting;
   const stopDisabled = !isRecording;
   const generateDisabled = isRecording || !hasRecording;
   const publishDisabled = !hasGeneratedSculpture || isRecording || state.publishInFlight;
   const resetDisabled = (!state.frames.length && !state.draft) || isRecording;
 
-  if (ui.micBtn) ui.micBtn.disabled = micDisabled;
   if (ui.startBtn) ui.startBtn.disabled = startDisabled;
   if (ui.stopBtn) ui.stopBtn.disabled = stopDisabled;
   if (ui.generateBtn) ui.generateBtn.disabled = generateDisabled;
   if (ui.publishBtn) ui.publishBtn.disabled = publishDisabled;
   if (ui.resetBtn) ui.resetBtn.disabled = resetDisabled;
 
-  console.log("[updateButtons]", {
-    currentUser: currentUser ? { uid: currentUser.uid, email: currentUser.email } : null,
-    stateUser: state.user ? { uid: state.user.uid } : null,
-    micReady,
-    isRecording,
-    hasRecording,
-    hasGeneratedSculpture,
-    framesCount: state.frames.length,
-    publishInFlight: state.publishInFlight,
-    buttonsDisabled: {
-      login: ui.loginBtn?.disabled,
-      logout: ui.logoutBtn?.disabled,
-      mic: ui.micBtn?.disabled,
-      start: ui.startBtn?.disabled,
-      stop: ui.stopBtn?.disabled,
-      generate: ui.generateBtn?.disabled,
-      publish: ui.publishBtn?.disabled,
-      reset: ui.resetBtn?.disabled,
-    },
-    micBtnInDom: !!ui.micBtn,
-  });
+  if (typeof window !== "undefined" && window.__DEBUG_BUTTONS__) {
+    console.log("[updateButtons]", {
+      currentUser: currentUser ? { uid: currentUser.uid, email: currentUser.email } : null,
+      stateUser: state.user ? { uid: state.user.uid } : null,
+      micReady,
+      audioStarting,
+      isRecording,
+      hasRecording,
+      hasGeneratedSculpture,
+      framesCount: state.frames.length,
+      publishInFlight: state.publishInFlight,
+      buttonsDisabled: {
+        login: ui.loginBtn?.disabled,
+        logout: ui.logoutBtn?.disabled,
+        start: ui.startBtn?.disabled,
+        stop: ui.stopBtn?.disabled,
+        generate: ui.generateBtn?.disabled,
+        publish: ui.publishBtn?.disabled,
+        reset: ui.resetBtn?.disabled,
+      },
+    });
+  }
 }
 
 function resetDraft() {

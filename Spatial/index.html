@@ -8,56 +8,57 @@
   </head>
   <body>
     <div class="app">
-      <header class="hero glass">
-        <h1>Sound Wave Frozen</h1>
-        <p>Record your voice and freeze it into a 3D sculpture</p>
-      </header>
+      <div class="ui-shell">
+        <header class="hero glass">
+          <h1>Sound Wave Frozen</h1>
+          <p>Record your voice and freeze it into a 3D sculpture</p>
+        </header>
 
-      <section class="top-panels">
-        <article class="auth-panel glass">
-          <div class="panel-title">Shared Space Access</div>
-          <div id="userInfo" class="user-info hidden">
-            <img id="userPhoto" alt="User profile" />
-            <div class="user-text">
-              <strong id="userName">-</strong>
-              <span id="userEmail">-</span>
+        <section class="top-panels">
+          <article class="auth-panel glass">
+            <div class="panel-title">Shared Space Access</div>
+            <div id="userInfo" class="user-info hidden">
+              <img id="userPhoto" alt="User profile" />
+              <div class="user-text">
+                <strong id="userName">-</strong>
+                <span id="userEmail">-</span>
+              </div>
             </div>
+            <div class="auth-actions">
+              <button type="button" id="loginBtn">Sign in with Google</button>
+              <button type="button" id="logoutBtn" disabled>Sign out</button>
+            </div>
+          </article>
+
+          <article class="controls-panel glass">
+            <div class="panel-title">Voice Capture</div>
+            <div class="controls">
+              <button type="button" id="startBtn">Record</button>
+              <button type="button" id="stopBtn" disabled>Stop Recording</button>
+              <button type="button" id="generateBtn" disabled>Generate Sculpture</button>
+              <button type="button" id="publishBtn" disabled>Publish to Shared Board</button>
+              <button type="button" id="resetBtn" disabled>Reset</button>
+            </div>
+          </article>
+        </section>
+
+        <section class="status-wrap glass">
+          <div class="status-label">Status</div>
+          <div id="statusText" class="status-text">
+            You can explore and generate your sculpture without signing in. Sign in to publish it to the shared space.
           </div>
-          <div class="auth-actions">
-            <button type="button" id="loginBtn">Sign in with Google</button>
-            <button type="button" id="logoutBtn" disabled>Sign out</button>
-          </div>
-        </article>
+        </section>
 
-        <article class="controls-panel glass">
-          <div class="panel-title">Voice Capture</div>
-          <div class="controls">
-            <button type="button" id="micBtn">Enable Microphone</button>
-            <button type="button" id="startBtn" disabled>Start Recording</button>
-            <button type="button" id="stopBtn" disabled>Stop Recording</button>
-            <button type="button" id="generateBtn" disabled>Generate Sculpture</button>
-            <button type="button" id="publishBtn" disabled>Publish to Shared Board</button>
-            <button type="button" id="resetBtn" disabled>Reset</button>
-          </div>
-        </article>
-      </section>
+        <section class="debug-panel glass">
+          <h2>Debug</h2>
+          <div><span>Average Volume</span><strong id="avgVolume">-</strong></div>
+          <div><span>Dominant Frequency</span><strong id="domFreq">-</strong></div>
+          <div><span>Dynamic Range</span><strong id="dynRange">-</strong></div>
+          <div><span>Frames</span><strong id="frameCount">0</strong></div>
+        </section>
+      </div>
 
-      <section class="status-wrap glass">
-        <div class="status-label">Status</div>
-        <div id="statusText" class="status-text">
-          You can explore and generate your sculpture without signing in. Sign in to publish it to the shared space.
-        </div>
-      </section>
-
-      <section class="debug-panel glass">
-        <h2>Debug</h2>
-        <div><span>Average Volume</span><strong id="avgVolume">-</strong></div>
-        <div><span>Dominant Frequency</span><strong id="domFreq">-</strong></div>
-        <div><span>Dynamic Range</span><strong id="dynRange">-</strong></div>
-        <div><span>Frames</span><strong id="frameCount">0</strong></div>
-      </section>
-
-      <section id="canvasContainer" class="canvas-container"></section>
+      <section id="canvasContainer" class="canvas-container" aria-label="3D view"></section>
     </div>
 
     <div id="tooltip" class="tooltip hidden"></div>
