@@ -142,6 +142,16 @@ function bindUI() {
   ui.canvasContainer?.addEventListener("click", onCanvasClick);
 }
 
+function statusLoggedIn() {
+  setStatus("Signed in. You can publish your sculpture to the shared space.");
+}
+
+function statusLoggedOut() {
+  setStatus(
+    "You can explore and generate your sculpture without signing in. Sign in to publish it to the shared space."
+  );
+}
+
 function attachAuthListener() {
   onAuthStateChanged(auth, (user) => {
     state.user = user || null;
@@ -150,10 +160,10 @@ function attachAuthListener() {
       ui.userName.textContent = state.user.displayName || "Unknown";
       ui.userEmail.textContent = state.user.email || "-";
       ui.userInfo.classList.remove("hidden");
-      setStatus("Signed in. Enable microphone to shape your voice sculpture.");
+      statusLoggedIn();
     } else {
       ui.userInfo.classList.add("hidden");
-      setStatus("Signed out. You can still explore the shared constellation.");
+      statusLoggedOut();
     }
     updateButtons();
   });
@@ -203,7 +213,8 @@ async function handleLogin(event) {
 async function handleLogout() {
   try {
     await signOut(auth);
-    resetDraft();
+    statusLoggedOut();
+    updateButtons();
   } catch (err) {
     console.error("[Firebase Auth] signOut failed:", {
       code: err?.code,
@@ -216,7 +227,6 @@ async function handleLogout() {
 
 // Microphone setup using AnalyserNode for FFT and waveform capture.
 async function setupMicrophone() {
-  if (!state.user) return setStatus("Sign in first to record your voice.");
   if (state.micReady) return;
 
   setStatus("Requesting microphone permission...");
@@ -245,7 +255,7 @@ async function setupMicrophone() {
 }
 
 function startRecording() {
-  if (!state.user || !state.micReady || state.recording) return;
+  if (!state.micReady || state.recording) return;
   state.recording = true;
   state.frames = [];
   state.draft = null;
