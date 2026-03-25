@@ -1,13 +1,14 @@
 import * as THREE from "https://unpkg.com/three@0.161.0/build/three.module.js";
 import { OrbitControls } from "https://unpkg.com/three@0.161.0/examples/jsm/controls/OrbitControls.js";
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-analytics.js";
 import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
   onAuthStateChanged,
   signOut,
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 import {
   getFirestore,
   collection,
@@ -17,15 +18,16 @@ import {
   orderBy,
   limit,
   onSnapshot,
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDq9J1FHvKapMrudjGme9vCWsOskJBgiT8",
   authDomain: "sharemind-29201.firebaseapp.com",
   projectId: "sharemind-29201",
-  storageBucket: "sharemind-29201.appspot.com",
+  storageBucket: "sharemind-29201.firebasestorage.app",
   messagingSenderId: "1013206091666",
-  appId: "1:1013206091666:web:dc20a4dd215d406fda634b",
+  appId: "1:1013206091666:web:cd23b62488b7828cda634b",
+  measurementId: "G-P53BLKFZK8",
 };
 
 const MAX_RECORD_MS = 20_000;
@@ -55,6 +57,12 @@ const ui = {
 };
 
 const app = initializeApp(firebaseConfig);
+// Analytics when the browser supports it (avoids hard failures in restricted environments).
+isSupported()
+  .then((ok) => {
+    if (ok) getAnalytics(app);
+  })
+  .catch(() => {});
 const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
