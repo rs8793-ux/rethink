@@ -675,18 +675,54 @@ function addBoardSculpture(id, data) {
 }
 
 function updateButtons() {
+  const currentUser = auth.currentUser;
   const logged = !!state.user;
-  // Auth panel: Sign in when logged out, Sign out when logged in (panel always visible).
+
+  const micReady = state.micReady;
+  const isRecording = state.recording;
+  const hasRecording = state.frames.length >= 3;
+  const hasGeneratedSculpture = !!state.draft;
+
+  // --- Auth-only (never use this for mic / record / generate / reset) ---
   if (ui.loginBtn) ui.loginBtn.disabled = logged;
   if (ui.logoutBtn) ui.logoutBtn.disabled = !logged;
-  // Voice capture: never gated on login; only mic readiness + recording + captured frames.
-  if (ui.micBtn) ui.micBtn.disabled = state.micReady || state.recording;
-  if (ui.startBtn) ui.startBtn.disabled = !state.micReady || state.recording;
-  if (ui.stopBtn) ui.stopBtn.disabled = !state.recording;
-  if (ui.generateBtn) ui.generateBtn.disabled = state.recording || state.frames.length < 3;
-  // Publish stays visible; enabled whenever a draft exists and not recording (sign-in runs on click if needed).
-  if (ui.publishBtn) ui.publishBtn.disabled = !state.draft || state.recording || state.publishInFlight;
-  if (ui.resetBtn) ui.resetBtn.disabled = (!state.frames.length && !state.draft) || state.recording;
+
+  // --- Voice pipeline: mic / record / generate / reset — NOT gated on login ---
+  const micDisabled = micReady || isRecording;
+  const startDisabled = !micReady || isRecording;
+  const stopDisabled = !isRecording;
+  const generateDisabled = isRecording || !hasRecording;
+  const publishDisabled = !hasGeneratedSculpture || isRecording || state.publishInFlight;
+  const resetDisabled = (!state.frames.length && !state.draft) || isRecording;
+
+  if (ui.micBtn) ui.micBtn.disabled = micDisabled;
+  if (ui.startBtn) ui.startBtn.disabled = startDisabled;
+  if (ui.stopBtn) ui.stopBtn.disabled = stopDisabled;
+  if (ui.generateBtn) ui.generateBtn.disabled = generateDisabled;
+  if (ui.publishBtn) ui.publishBtn.disabled = publishDisabled;
+  if (ui.resetBtn) ui.resetBtn.disabled = resetDisabled;
+
+  console.log("[updateButtons]", {
+    currentUser: currentUser ? { uid: currentUser.uid, email: currentUser.email } : null,
+    stateUser: state.user ? { uid: state.user.uid } : null,
+    micReady,
+    isRecording,
+    hasRecording,
+    hasGeneratedSculpture,
+    framesCount: state.frames.length,
+    publishInFlight: state.publishInFlight,
+    buttonsDisabled: {
+      login: ui.loginBtn?.disabled,
+      logout: ui.logoutBtn?.disabled,
+      mic: ui.micBtn?.disabled,
+      start: ui.startBtn?.disabled,
+      stop: ui.stopBtn?.disabled,
+      generate: ui.generateBtn?.disabled,
+      publish: ui.publishBtn?.disabled,
+      reset: ui.resetBtn?.disabled,
+    },
+    micBtnInDom: !!ui.micBtn,
+  });
 }
 
 function resetDraft() {

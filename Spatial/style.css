@@ -60,6 +60,8 @@ body {
   display: grid;
   grid-template-columns: 320px 1fr;
   gap: 10px;
+  position: relative;
+  z-index: 15;
 }
 
 .auth-panel,
