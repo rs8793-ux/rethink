@@ -78,6 +78,7 @@ const state = {
   frames: [],
   draft: null,
   lastPublishedId: null,
+  publishInFlight: false,
 };
 
 const audio = {
@@ -498,14 +499,64 @@ function clearDraftMesh() {
 }
 
 async function publishDraft() {
-  if (!state.user) return setStatus("Sign in to publish.");
-  if (!state.draft) return setStatus("Generate a sculpture first.");
+  if (state.publishInFlight || state.recording) return;
+  if (!state.draft) {
+    setStatus("Generate a sculpture first.");
+    return;
+  }
 
+  state.publishInFlight = true;
+  updateButtons();
+
+  try {
+    let user = state.user || auth.currentUser;
+
+    if (!user) {
+      setStatus("Please sign in to publish your sculpture.");
+      try {
+        console.log("[Firebase Auth] Publish requested while signed out; opening Google sign-in…");
+        const credential = await signInWithPopup(auth, provider);
+        user = credential?.user;
+        console.log("[Firebase Auth] Sign-in finished; continuing publish.", { uid: user?.uid });
+      } catch (err) {
+        console.error("[Firebase Auth] signInWithPopup failed (publish flow):", {
+          code: err?.code,
+          message: err?.message,
+          customData: err?.customData,
+          fullError: err,
+        });
+        if (err?.code === "auth/popup-blocked") {
+          setStatus("Pop-up was blocked. Allow pop-ups for this site, then try Publish again.");
+        } else if (err?.code === "auth/popup-closed-by-user") {
+          setStatus("Sign-in was cancelled. Sign in when you’re ready to publish.");
+        } else if (err?.code === "auth/unauthorized-domain") {
+          setStatus("This domain is not authorized for Firebase Auth. Add it in Firebase Console → Authentication → Settings.");
+        } else {
+          setStatus(`Sign-in failed${err?.code ? ` (${err.code})` : ""}. See console for details.`);
+        }
+        return;
+      }
+    }
+
+    if (!user) {
+      setStatus("Sign-in did not complete. Try Publish again after signing in.");
+      return;
+    }
+
+    await writePublishedSculpture(user);
+  } finally {
+    state.publishInFlight = false;
+    updateButtons();
+  }
+}
+
+async function writePublishedSculpture(user) {
+  setStatus("Publishing to the shared space…");
   const position = findOpenPosition();
   const docData = {
-    userId: state.user.uid,
-    userName: state.user.displayName || "Unknown",
-    userPhoto: state.user.photoURL || "",
+    userId: user.uid,
+    userName: user.displayName || "Unknown",
+    userPhoto: user.photoURL || "",
     createdAt: serverTimestamp(),
     avgVolume: state.draft.avgVolume,
     maxVolume: state.draft.maxVolume,
@@ -529,7 +580,7 @@ async function publishDraft() {
     state.draft = null;
     updateButtons();
   } catch (err) {
-    console.error(err);
+    console.error("[Firestore] publish failed:", err);
     setStatus("Publish failed. Please try again.");
   }
 }
@@ -625,13 +676,16 @@ function addBoardSculpture(id, data) {
 
 function updateButtons() {
   const logged = !!state.user;
+  // Auth panel: Sign in when logged out, Sign out when logged in (panel always visible).
   if (ui.loginBtn) ui.loginBtn.disabled = logged;
   if (ui.logoutBtn) ui.logoutBtn.disabled = !logged;
-  if (ui.micBtn) ui.micBtn.disabled = !logged || state.micReady || state.recording;
-  if (ui.startBtn) ui.startBtn.disabled = !logged || !state.micReady || state.recording;
+  // Voice capture: never gated on login; only mic readiness + recording + captured frames.
+  if (ui.micBtn) ui.micBtn.disabled = state.micReady || state.recording;
+  if (ui.startBtn) ui.startBtn.disabled = !state.micReady || state.recording;
   if (ui.stopBtn) ui.stopBtn.disabled = !state.recording;
-  if (ui.generateBtn) ui.generateBtn.disabled = !logged || state.recording || state.frames.length < 3;
-  if (ui.publishBtn) ui.publishBtn.disabled = !logged || !state.draft || state.recording;
+  if (ui.generateBtn) ui.generateBtn.disabled = state.recording || state.frames.length < 3;
+  // Publish stays visible; enabled whenever a draft exists and not recording (sign-in runs on click if needed).
+  if (ui.publishBtn) ui.publishBtn.disabled = !state.draft || state.recording || state.publishInFlight;
   if (ui.resetBtn) ui.resetBtn.disabled = (!state.frames.length && !state.draft) || state.recording;
 }
 
@@ -644,7 +698,11 @@ function resetDraft() {
   ui.avgVolume.textContent = "-";
   ui.domFreq.textContent = "-";
   ui.dynRange.textContent = "-";
-  setStatus(state.user ? "Ready for a new voice." : "Signed out. Explore the shared board.");
+  if (state.user) {
+    setStatus("Ready for a new voice.");
+  } else {
+    statusLoggedOut();
+  }
   updateButtons();
 }
 
