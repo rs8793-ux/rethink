@@ -1,54 +1,96 @@
-import * as THREE from "https://unpkg.com/three@0.161.0/build/three.module.js";
-import { OrbitControls } from "https://unpkg.com/three@0.161.0/examples/jsm/controls/OrbitControls.js";
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-analytics.js";
-import {
-  getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
-  onAuthStateChanged,
-  signOut,
-} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  serverTimestamp,
-  query,
-  orderBy,
-  limit,
-  onSnapshot,
-} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+/**
+ * Three.js is loaded dynamically so UI + microphone still run if CDN is slow/blocked.
+ * Static `import` at the top would prevent the whole module (and bootstrap) from running.
+ */
+let THREE = null;
+let OrbitControls = null;
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDq9J1FHvKapMrudjGme9vCWsOskJBgiT8",
-  authDomain: "sharemind-29201.firebaseapp.com",
-  projectId: "sharemind-29201",
-  storageBucket: "sharemind-29201.firebasestorage.app",
-  messagingSenderId: "1013206091666",
-  appId: "1:1013206091666:web:cd23b62488b7828cda634b",
-  measurementId: "G-P53BLKFZK8",
-};
+const THREE_URLS = [
+  "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+  "https://unpkg.com/three@0.161.0/build/three.module.js",
+];
+const ORBIT_URLS = [
+  "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/controls/OrbitControls.js",
+  "https://unpkg.com/three@0.161.0/examples/jsm/controls/OrbitControls.js",
+];
+
+async function loadThreeFrom(urls, label) {
+  let lastErr;
+  for (const url of urls) {
+    try {
+      return await import(/* @vite-ignore */ url);
+    } catch (e) {
+      lastErr = e;
+      console.warn(`[Three] ${label} failed from ${url}`, e);
+    }
+  }
+  throw lastErr || new Error(`All ${label} URLs failed`);
+}
+
+async function loadThreeModules() {
+  if (THREE && OrbitControls) return;
+  THREE = await loadThreeFrom(THREE_URLS, "core");
+  try {
+    const orbitMod = await loadThreeFrom(ORBIT_URLS, "OrbitControls");
+    OrbitControls = orbitMod.OrbitControls;
+  } catch (e1) {
+    console.warn("[Three] OrbitControls failed (often missing import map for 'three'). Trying esm.sh…", e1);
+    const orbitMod = await import("https://esm.sh/three@0.161.0/examples/jsm/controls/OrbitControls.js");
+    OrbitControls = orbitMod.OrbitControls;
+  }
+}
 
 const MAX_RECORD_MS = 20_000;
-const MAX_SCULPTURES = 40;
-const BOARD_BOUNDS = 20;
 
-/** Filled in bootstrap() after DOM is ready (avoids null refs + missed listeners). */
+/** Filled in bootstrap() after DOM is ready. */
 const ui = {};
+
+const RECORDING_PROMPTS = [
+  "Introduce yourself in 10 seconds",
+  "What are you feeling right now?",
+  "What is something that has been stressing you lately?",
+  "Describe your day in one sentence",
+  "Say something you normally would not say out loud",
+  "Name one thing you are grateful for today",
+  "What sound does your mood make?",
+  "Whisper a secret to the microphone",
+  "Finish the sentence: “Right now I need…”",
+];
+
+const FORM_LABELS = {
+  tube: "Smooth flow",
+  spiky: "Spiky resonance",
+  hollow: "Glass shell",
+  boxy: "Stacked blocks",
+  ribbon: "Ribbon wave",
+};
+
+function escapeHtml(text) {
+  const d = document.createElement("div");
+  d.textContent = text;
+  return d.innerHTML;
+}
+
+function renderRecordingPrompts() {
+  const el = ui.recordingPrompts;
+  if (!el) return;
+  const pool = [...RECORDING_PROMPTS];
+  for (let i = pool.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const pick = pool.slice(0, 3);
+  el.innerHTML = pick.map((p) => `<div class="prompt-card">${escapeHtml(p)}</div>`).join("");
+}
 
 function cacheDomRefs() {
   Object.assign(ui, {
-    loginBtn: document.getElementById("loginBtn"),
-    logoutBtn: document.getElementById("logoutBtn"),
-    userInfo: document.getElementById("userInfo"),
-    userPhoto: document.getElementById("userPhoto"),
-    userName: document.getElementById("userName"),
-    userEmail: document.getElementById("userEmail"),
+    recordingPrompts: document.getElementById("recordingPrompts"),
+    controlsRoot: document.getElementById("controlsRoot"),
+    enableMicBtn: document.getElementById("enableMicBtn"),
     startBtn: document.getElementById("startBtn"),
     stopBtn: document.getElementById("stopBtn"),
     generateBtn: document.getElementById("generateBtn"),
-    publishBtn: document.getElementById("publishBtn"),
     resetBtn: document.getElementById("resetBtn"),
     statusText: document.getElementById("statusText"),
     avgVolume: document.getElementById("avgVolume"),
@@ -57,33 +99,19 @@ function cacheDomRefs() {
     frameCount: document.getElementById("frameCount"),
     canvasContainer: document.getElementById("canvasContainer"),
     tooltip: document.getElementById("tooltip"),
+    resetModal: document.getElementById("resetModal"),
+    resetNameInput: document.getElementById("resetNameInput"),
+    resetModalCancel: document.getElementById("resetModalCancel"),
+    resetModalConfirm: document.getElementById("resetModalConfirm"),
   });
 }
 
-const app = initializeApp(firebaseConfig);
-// Analytics when the browser supports it (avoids hard failures in restricted environments).
-isSupported()
-  .then((ok) => {
-    if (ok) getAnalytics(app);
-  })
-  .catch(() => {});
-const auth = getAuth(app);
-const db = getFirestore(app);
-const provider = new GoogleAuthProvider();
-provider.setCustomParameters({ prompt: "select_account" });
-provider.addScope("profile");
-provider.addScope("email");
-const sculpturesCol = collection(db, "voice_sculptures");
-
 const state = {
-  user: null,
   micReady: false,
   audioStarting: false,
   recording: false,
   frames: [],
   draft: null,
-  lastPublishedId: null,
-  publishInFlight: false,
 };
 
 const audio = {
@@ -104,57 +132,87 @@ const sceneState = {
   boardGroup: null,
   draftMesh: null,
   particles: null,
-  raycaster: new THREE.Raycaster(),
-  mouse: new THREE.Vector2(999, 999),
+  raycaster: null,
+  mouse: null,
   hovered: null,
-  clock: new THREE.Clock(),
+  clock: null,
   intro: 0,
   driftPhase: Math.random() * Math.PI * 2,
-  sculptures: new Map(),
+  /** Archived voice sculptures floating on the share board */
+  sharedBoard: new Map(),
 };
 
-function bootstrap() {
+/** Persisted gallery entries (localStorage). */
+const GALLERY_STORAGE_KEY = "soundWaveFrozen_gallery_v1";
+
+function cloneFeaturesForStorage(features) {
+  return JSON.parse(JSON.stringify(features));
+}
+
+async function bootstrap() {
   cacheDomRefs();
 
-  const missing = ["loginBtn", "logoutBtn", "startBtn", "canvasContainer", "statusText"].filter((k) => !ui[k]);
+  const missing = ["startBtn", "canvasContainer", "statusText", "controlsRoot"].filter((k) => !ui[k]);
+  if (!ui.enableMicBtn) {
+    console.warn("[bootstrap] No #enableMicBtn — use Start Recording to request mic in one step.");
+  }
   if (missing.length) {
     console.error("[bootstrap] Missing DOM nodes:", missing.join(", "));
   }
 
   bindUI();
-  attachAuthListener();
-  try {
-    initThree();
-  } catch (err) {
-    console.error("[Three.js] init failed:", err);
-    setStatus("3D view failed to start. You can still try signing in—check the console.");
-  }
-  listenToSculptures();
+  renderRecordingPrompts();
+  setStatus("Tap “Enable Microphone”, allow access, then Start Recording.");
   updateButtons();
+
+  try {
+    await loadThreeModules();
+    initThree();
+    loadSharedBoardFromStorage();
+  } catch (err) {
+    console.error("[Three.js] load/init failed:", err);
+    setStatus(
+      "3D library could not load (network / ad blocker). Microphone buttons below should still work — try again or allow cdn.jsdelivr.net."
+    );
+  }
+
   animate();
 }
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", bootstrap, { once: true });
+  document.addEventListener("DOMContentLoaded", () => void bootstrap(), { once: true });
 } else {
-  bootstrap();
+  void bootstrap();
 }
 
+// One delegated listener on the control bar — works even if individual bindings fail.
 function bindUI() {
-  if (!ui.loginBtn || !ui.logoutBtn) {
-    console.error("[bindUI] Missing #loginBtn or #logoutBtn; Google sign-in will not work.");
-  }
-  if (!ui.canvasContainer) {
-    console.error("[bindUI] Missing #canvasContainer.");
+  const root = ui.controlsRoot;
+  if (root) {
+    root.addEventListener("click", (e) => {
+      const btn = e.target.closest("button");
+      if (!btn || btn.disabled) return;
+      const { id } = btn;
+      if (id === "enableMicBtn") void enableMicrophoneOnly();
+      else if (id === "startBtn") void startRecording();
+      else if (id === "stopBtn") stopRecording();
+      else if (id === "generateBtn") generateDraftSculpture();
+      else if (id === "resetBtn") openResetModal();
+    });
   }
 
-  if (ui.loginBtn) ui.loginBtn.addEventListener("click", handleLogin);
-  if (ui.logoutBtn) ui.logoutBtn.addEventListener("click", handleLogout);
-  if (ui.startBtn) ui.startBtn.addEventListener("click", () => void startRecording());
-  if (ui.stopBtn) ui.stopBtn.addEventListener("click", stopRecording);
-  if (ui.generateBtn) ui.generateBtn.addEventListener("click", generateDraftSculpture);
-  if (ui.publishBtn) ui.publishBtn.addEventListener("click", () => void publishDraft());
-  if (ui.resetBtn) ui.resetBtn.addEventListener("click", resetDraft);
+  ui.resetModalCancel?.addEventListener("click", closeResetModal);
+  ui.resetModalConfirm?.addEventListener("click", () => confirmResetModal());
+  ui.resetModal?.querySelector(".modal-backdrop")?.addEventListener("click", closeResetModal);
+  ui.resetNameInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      confirmResetModal();
+    }
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && ui.resetModal && !ui.resetModal.classList.contains("hidden")) closeResetModal();
+  });
 
   if (ui.canvasContainer) {
     ui.canvasContainer.addEventListener("pointermove", onPointerMove);
@@ -163,97 +221,26 @@ function bindUI() {
   }
 }
 
-function statusLoggedIn() {
-  setStatus("Signed in. You can publish your sculpture to the shared space.");
-}
-
-function statusLoggedOut() {
-  setStatus(
-    "You can explore and generate your sculpture without signing in. Sign in to publish it to the shared space."
-  );
-}
-
-function attachAuthListener() {
-  onAuthStateChanged(auth, (user) => {
-    state.user = user || null;
-    if (state.user) {
-      ui.userPhoto.src = state.user.photoURL || "";
-      ui.userName.textContent = state.user.displayName || "Unknown";
-      ui.userEmail.textContent = state.user.email || "-";
-      ui.userInfo.classList.remove("hidden");
-      statusLoggedIn();
-    } else {
-      ui.userInfo.classList.add("hidden");
-      statusLoggedOut();
-    }
-    updateButtons();
-  });
-}
-
-async function handleLogin(event) {
-  event?.preventDefault?.();
-  console.log("[Firebase Auth] Sign in clicked.");
-
-  if (!ui.loginBtn) {
-    console.error("[Firebase Auth] loginBtn missing from DOM.");
-    return;
-  }
-  if (ui.loginBtn.disabled) {
-    console.warn("[Firebase Auth] Login button is disabled (already signed in?).");
-    return;
-  }
-
-  try {
-    console.log("[Firebase Auth] Calling signInWithPopup(auth, provider)…");
-    const credential = await signInWithPopup(auth, provider);
-    console.log("[Firebase Auth] signInWithPopup resolved.", {
-      uid: credential?.user?.uid,
-      email: credential?.user?.email,
-    });
-  } catch (err) {
-    console.error("[Firebase Auth] signInWithPopup failed:", {
-      code: err?.code,
-      message: err?.message,
-      customData: err?.customData,
-      name: err?.name,
-      stack: err?.stack,
-      fullError: err,
-    });
-    if (err?.code === "auth/popup-blocked") {
-      setStatus("Pop-up was blocked. Allow pop-ups for this site and try again.");
-    } else if (err?.code === "auth/popup-closed-by-user") {
-      setStatus("Sign-in window was closed before finishing.");
-    } else if (err?.code === "auth/unauthorized-domain") {
-      setStatus("This domain is not authorized for Firebase Auth. Add it in Firebase Console → Authentication → Settings.");
-    } else {
-      setStatus(`Google sign-in failed${err?.code ? ` (${err.code})` : ""}. See console for details.`);
-    }
-  }
-}
-
-async function handleLogout() {
-  try {
-    await signOut(auth);
-    statusLoggedOut();
-    updateButtons();
-  } catch (err) {
-    console.error("[Firebase Auth] signOut failed:", {
-      code: err?.code,
-      message: err?.message,
-      fullError: err,
-    });
-    setStatus("Sign out failed. Please try again.");
-  }
-}
-
-// Microphone + AnalyserNode: called automatically the first time user clicks Record.
+// Microphone + AnalyserNode (call from a direct click/tap — required for permission + AudioContext).
 async function ensureMicrophoneAndAnalyser() {
   if (state.micReady && audio.analyser && audio.ctx) {
     if (audio.ctx.state === "suspended") await audio.ctx.resume();
     return;
   }
 
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  if (!window.isSecureContext) {
+    throw new Error("INSECURE_CONTEXT");
+  }
+  if (!navigator.mediaDevices?.getUserMedia) {
+    throw new Error("NO_GET_USER_MEDIA");
+  }
+
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: {
+      echoCancellation: true,
+      noiseSuppression: true,
+    },
+  });
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
   const source = ctx.createMediaStreamSource(stream);
   const analyser = ctx.createAnalyser();
@@ -272,27 +259,55 @@ async function ensureMicrophoneAndAnalyser() {
   state.micReady = true;
 }
 
+/** Step 1: wired to #enableMicBtn — must run in direct response to user gesture. */
+async function enableMicrophoneOnly() {
+  if (state.micReady) {
+    setStatus("Microphone is already enabled. Tap Start Recording.");
+    return;
+  }
+  if (state.audioStarting) return;
+
+  if (!window.isSecureContext) {
+    setStatus("Microphone needs HTTPS or http://localhost. Do not open this page as file://.");
+    return;
+  }
+  if (!navigator.mediaDevices?.getUserMedia) {
+    setStatus("This browser does not expose the microphone API here.");
+    return;
+  }
+
+  state.audioStarting = true;
+  updateButtons();
+  setStatus("Requesting microphone permission…");
+  try {
+    await ensureMicrophoneAndAnalyser();
+    setStatus("Microphone ready. Tap Start Recording.");
+  } catch (err) {
+    console.error("[mic]", err);
+    if (err?.message === "INSECURE_CONTEXT") {
+      setStatus("Use HTTPS or localhost — not file:// — for microphone access.");
+    } else if (err?.message === "NO_GET_USER_MEDIA") {
+      setStatus("getUserMedia is not available (try another browser or update).");
+    } else if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+      setStatus("Microphone blocked. Click the lock icon in the address bar and allow microphone.");
+    } else if (err?.name === "NotFoundError") {
+      setStatus("No microphone found. Connect a mic and try again.");
+    } else {
+      setStatus(`Could not open microphone: ${err?.message || err?.name || "unknown error"}`);
+    }
+  } finally {
+    state.audioStarting = false;
+    updateButtons();
+  }
+}
+
 async function startRecording() {
   if (state.recording || state.audioStarting) return;
 
   if (!state.micReady) {
-    state.audioStarting = true;
-    updateButtons();
-    setStatus("Requesting microphone…");
-    try {
-      await ensureMicrophoneAndAnalyser();
-    } catch (err) {
-      console.error(err);
-      setStatus("Microphone permission denied. Please allow access and try again.");
-      state.audioStarting = false;
-      updateButtons();
-      return;
-    }
-    state.audioStarting = false;
-    updateButtons();
+    setStatus('Tap “Enable Microphone” first and allow access, then Start Recording.');
+    return;
   }
-
-  if (state.recording) return;
 
   if (audio.ctx?.state === "suspended") {
     try {
@@ -306,7 +321,8 @@ async function startRecording() {
   state.frames = [];
   state.draft = null;
   clearDraftMesh();
-  setStatus("Recording...");
+  ui.recordingPrompts?.classList.add("is-recording");
+  setStatus("Recording…");
   updateButtons();
 
   audio.timer = window.setTimeout(() => {
@@ -315,7 +331,6 @@ async function startRecording() {
   collectFrame();
 }
 
-// Data collection loop: stores frequency bins + time-domain waveform over time.
 function collectFrame() {
   if (!state.recording) return;
   audio.analyser.getByteFrequencyData(audio.freqData);
@@ -353,7 +368,7 @@ function collectFrame() {
     wave,
   };
   state.frames.push(frame);
-  ui.frameCount.textContent = String(state.frames.length);
+  if (ui.frameCount) ui.frameCount.textContent = String(state.frames.length);
   audio.raf = requestAnimationFrame(collectFrame);
 }
 
@@ -362,26 +377,178 @@ function stopRecording() {
   state.recording = false;
   cancelAnimationFrame(audio.raf);
   clearTimeout(audio.timer);
+  ui.recordingPrompts?.classList.remove("is-recording");
+  renderRecordingPrompts();
   if (state.frames.length < 3) {
     setStatus("No meaningful audio captured. Try recording again.");
   } else {
-    setStatus("Recording finished. Generate your sculpture.");
+    setStatus("Recording finished. Tap Generate Sculpture.");
   }
   updateButtons();
+}
+
+/** Deterministic RNG from a voice fingerprint — same recording → same shape; different voice → very different path. */
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function rand() {
+    let t = (a += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function computeVoiceSeed(frames, m) {
+  let h = 2166136261 >>> 0;
+  const mix = (v) => {
+    h ^= v >>> 0;
+    h = Math.imul(h, 16777619) >>> 0;
+  };
+  mix(frames.length);
+  mix((m.spectralCentroid * 1e6) | 0);
+  mix((m.dynamicRange * 1e6) | 0);
+  mix((m.avgVolume * 1e6) | 0);
+  mix(m.dominantFreq | 0);
+  mix((m.spectralSpread * 1e6) | 0);
+  mix((m.temporalVolatility * 1e6) | 0);
+  mix((m.bandTilt * 1e6) | 0);
+  mix((m.zeroCrossRate * 1e6) | 0);
+  mix((m.peakiness * 1e6) | 0);
+  const step = Math.max(1, Math.floor(frames.length / 56));
+  for (let i = 0; i < frames.length; i += step) {
+    const f = frames[i];
+    mix((f.volume * 1e5) | 0);
+    mix((f.centroidNorm * 1e5) | 0);
+    mix(f.dominantBin | 0);
+  }
+  return h >>> 0 || 1;
+}
+
+function pickPoeticLine(energyLevel, emotionalTone, voiceSeed) {
+  const r = mulberry32(voiceSeed + 4444);
+  const pools = {
+    calm: {
+      low: [
+        "Still water holding a whisper.",
+        "Soft light through thin curtains.",
+        "Footsteps fading on quiet stone.",
+      ],
+      medium: [
+        "A measured breath between thoughts.",
+        "Gentle waves against a distant shore.",
+        "The pause where color gathers.",
+      ],
+      high: [
+        "Warm thunder held in glass.",
+        "Many quiet things said at once.",
+        "A choir under a single lid.",
+      ],
+    },
+    tense: {
+      low: ["Wire drawn tight, barely humming.", "A held note before the drop.", "The hinge before the door opens."],
+      medium: [
+        "Edges sharpen where the voice rises.",
+        "Static skipping before rain.",
+        "Heat along a narrow wire.",
+      ],
+      high: [
+        "Lightning braided in a narrow room.",
+        "The air before something breaks.",
+        "Teeth of glass in soft fog.",
+      ],
+    },
+    chaotic: {
+      low: ["Moths against a single bulb.", "Scatter of notes, still finding a key.", "A jar of coins mid-pour."],
+      medium: [
+        "Glass dust in a sunbeam, every piece turning.",
+        "A storm threaded through commas.",
+        "Stars arguing over one microphone.",
+      ],
+      high: [
+        "Every frequency waving a small flag.",
+        "Galaxies in a teaspoon, still spinning.",
+        "Confetti made of wavelengths.",
+      ],
+    },
+  };
+  const toneKey = emotionalTone in pools ? emotionalTone : "calm";
+  const energyKey = energyLevel === "high" || energyLevel === "low" ? energyLevel : "medium";
+  const arr = pools[toneKey][energyKey] || pools.calm.medium;
+  return arr[Math.floor(r() * arr.length)];
+}
+
+function deriveEmotionalMeta(f) {
+  const eScore = f.avgVolume * 0.5 + f.dynamicRange * 1.1 + f.temporalVolatility * 1.25 + f.spectralSpread * 0.38;
+  let energyLevel = "low";
+  if (eScore > 0.3) energyLevel = "medium";
+  if (eScore > 0.5) energyLevel = "high";
+
+  const tension = f.zeroCrossRate * 1.85 + f.temporalVolatility * 2.4;
+  const chaos = f.spectralSpread * 1.45 + Math.max(0, f.peakiness - 1) * 0.12;
+
+  let emotionalTone = "calm";
+  if (chaos > 0.32 && eScore > 0.26) emotionalTone = "chaotic";
+  else if (tension > 0.2 || f.dynamicRange > 0.32) emotionalTone = "tense";
+
+  const poeticLine = pickPoeticLine(energyLevel, emotionalTone, f.voiceSeed);
+  return { energyLevel, emotionalTone, poeticLine };
+}
+
+function pickSculptureForm(bandNormalized, voiceSeed, o) {
+  const r = mulberry32(voiceSeed + 901);
+  const treble = bandNormalized[2] + bandNormalized[3];
+  const bass = bandNormalized[0] + bandNormalized[1];
+  const volN = Math.min(1, o.avgVolume * 4);
+  const { dynamicRange: dr, spectralSpread: sp, zeroCrossRate: zc, peakiness: pk, temporalVolatility: tv } = o;
+
+  const scores = {
+    spiky: treble * 2.35 + dr * 1.9 + tv * 0.6 + r() * 0.22,
+    tube: bass * 2.05 + (1 - Math.min(1, dr * 2.8)) * 0.7 + (1 - treble) * 0.25 + r() * 0.16,
+    hollow: sp * 1.85 + (1 - volN) * 0.75 + treble * 0.45 + r() * 0.2,
+    boxy: pk * 0.32 + zc * 1.45 + dr * 1.05 + r() * 0.17,
+    ribbon: (1 - volN) * 1.85 + dr * 0.6 + bass * 0.4 + (1 - sp) * 0.15 + r() * 0.18,
+  };
+
+  let best = "tube";
+  let bestS = -1;
+  for (const [k, v] of Object.entries(scores)) {
+    if (v > bestS) {
+      bestS = v;
+      best = k;
+    }
+  }
+  return best;
+}
+
+/** Spread hues across the wheel from voiceSeed so sculptures read as clearly different colors. */
+function hueFromVoiceSeed(voiceSeed, bandTint = 0) {
+  const s = voiceSeed >>> 0;
+  const u = (s * 2654435761) >>> 0;
+  const v = (Math.imul(s, 1597334677) >>> 0) / 4294967296;
+  const w = u / 4294967296;
+  let h = (v * 0.5 + w * 0.5 + (s % 17) * 0.011 + bandTint * 0.09) % 1;
+  h = (h + 1) % 1;
+  return h;
 }
 
 function summarizeFrames(frames) {
   const count = frames.length || 1;
   let avgVolume = 0;
   let maxVolume = 0;
+  let minVolume = 1;
   let centroid = 0;
+  let centroidSq = 0;
   const bands = [0, 0, 0, 0];
   const volumes = [];
+  let zeroCrosses = 0;
+  let zcSamples = 0;
 
   for (const f of frames) {
     avgVolume += f.volume;
     maxVolume = Math.max(maxVolume, f.volume);
+    minVolume = Math.min(minVolume, f.volume);
     centroid += f.centroidNorm;
+    centroidSq += f.centroidNorm * f.centroidNorm;
     volumes.push(f.volume);
     for (let b = 0; b < 4; b += 1) {
       const s = Math.floor((b * f.freq.length) / 4);
@@ -390,26 +557,77 @@ function summarizeFrames(frames) {
       for (let i = s; i < e; i += 1) local += f.freq[i];
       bands[b] += local / (e - s);
     }
+    for (let j = 1; j < f.wave.length; j += 1) {
+      zcSamples += 1;
+      if (f.wave[j - 1] * f.wave[j] < 0) zeroCrosses += 1;
+    }
   }
 
   avgVolume /= count;
   centroid /= count;
+  const spectralSpread = Math.sqrt(Math.max(0, centroidSq / count - centroid * centroid));
   for (let i = 0; i < bands.length; i += 1) bands[i] /= count;
-  const dynamicRange = maxVolume - Math.min(...volumes);
+  const bandSum = bands.reduce((a, b) => a + b, 0) + 1e-6;
+  const bandNormalized = bands.map((b) => b / bandSum);
+  const dynamicRange = maxVolume - minVolume;
   const dominantFreq = bands.indexOf(Math.max(...bands));
-  const energy = Math.min(1, avgVolume * 0.8 + dynamicRange * 1.2);
-  const hue = 0.58 + (0.06 - 0.58) * energy;
-  const brightness = 0.45 + energy * 0.26;
-  const height = 4 + avgVolume * 8 + dynamicRange * 5;
-  const roughness = 0.2 + bands[3] * 0.5;
+  const bandTilt = bands[3] + bands[2] - (bands[0] + bands[1]);
 
-  const radiusProfile = sampleProfile(frames, 32, (f, idx) => {
-    const fi = Math.floor((idx / 31) * (f.freq.length - 1));
-    return Math.min(1.9, 0.3 + f.volume * 1.4 + f.freq[fi] * 0.7);
+  let vMean = 0;
+  let vSq = 0;
+  for (const v of volumes) {
+    vMean += v;
+    vSq += v * v;
+  }
+  vMean /= count;
+  const temporalVolatility = Math.sqrt(Math.max(0, vSq / count - vMean * vMean));
+  const peakiness = maxVolume / (avgVolume + 0.03);
+  const zeroCrossRate = zcSamples > 0 ? zeroCrosses / zcSamples : 0;
+
+  const metricsForSeed = {
+    spectralCentroid: centroid,
+    dynamicRange,
+    avgVolume,
+    dominantFreq,
+    spectralSpread,
+    temporalVolatility,
+    bandTilt,
+    zeroCrossRate,
+    peakiness,
+  };
+  const voiceSeed = computeVoiceSeed(frames, metricsForSeed);
+  const formKind = pickSculptureForm(bandNormalized, voiceSeed, {
+    avgVolume,
+    dynamicRange,
+    spectralSpread,
+    zeroCrossRate,
+    peakiness,
+    temporalVolatility,
+  });
+  const { energyLevel, emotionalTone, poeticLine } = deriveEmotionalMeta({
+    avgVolume,
+    dynamicRange,
+    temporalVolatility,
+    spectralSpread,
+    zeroCrossRate,
+    peakiness,
+    voiceSeed,
   });
 
-  const waveformProfile = sampleProfile(frames, 64, (f, idx) => {
-    const wi = Math.floor((idx / 63) * (f.wave.length - 1));
+  const energy = Math.min(1, avgVolume * 0.75 + dynamicRange * 1.1 + spectralSpread * 0.9);
+  const bandTint = bandNormalized[3] - bandNormalized[0];
+  const hue = hueFromVoiceSeed(voiceSeed, bandTint);
+  const brightness = 0.38 + energy * 0.28 + temporalVolatility * 0.35;
+  const height = 2.2 + avgVolume * 11 + dynamicRange * 7 + spectralSpread * 9 + peakiness * 0.4;
+  const roughness = 0.12 + bandNormalized[3] * 0.55 + zeroCrossRate * 0.8 + temporalVolatility * 0.6;
+
+  const radiusProfile = sampleProfile(frames, 40, (f, idx) => {
+    const fi = Math.floor((idx / 39) * (f.freq.length - 1));
+    return Math.min(2.4, 0.15 + f.volume * 2.2 + f.freq[fi] * 1.1 + Math.abs(f.wave[idx % f.wave.length]) * 0.4);
+  });
+
+  const waveformProfile = sampleProfile(frames, 72, (f, idx) => {
+    const wi = Math.floor((idx / 71) * (f.wave.length - 1));
     return f.wave[wi];
   });
 
@@ -419,12 +637,23 @@ function summarizeFrames(frames) {
     dominantFreq,
     spectralCentroid: centroid,
     dynamicRange,
+    spectralSpread,
+    temporalVolatility,
+    bandTilt,
+    peakiness,
+    zeroCrossRate,
+    bandNormalized,
+    voiceSeed,
     radiusProfile,
     waveformProfile,
     height,
     roughness,
-    hue,
-    brightness,
+    hue: ((hue % 1) + 1) % 1,
+    brightness: Math.min(0.82, Math.max(0.28, brightness)),
+    formKind,
+    energyLevel,
+    emotionalTone,
+    poeticLine,
   };
 }
 
@@ -442,54 +671,140 @@ function generateDraftSculpture() {
     setStatus("Record audio first.");
     return;
   }
+  if (!THREE || !sceneState.boardGroup) {
+    setStatus("3D is not ready (library still loading or failed). Check console / network, then refresh.");
+    return;
+  }
   const features = summarizeFrames(state.frames);
   state.draft = {
     ...features,
     position: { x: 0, y: 0, z: 0 },
   };
-  ui.avgVolume.textContent = features.avgVolume.toFixed(3);
-  ui.domFreq.textContent = String(features.dominantFreq);
-  ui.dynRange.textContent = features.dynamicRange.toFixed(3);
+  if (ui.avgVolume) ui.avgVolume.textContent = features.avgVolume.toFixed(3);
+  if (ui.domFreq) ui.domFreq.textContent = String(features.dominantFreq);
+  if (ui.dynRange) ui.dynRange.textContent = features.dynamicRange.toFixed(3);
 
   clearDraftMesh();
-  const mesh = makeSculptureMesh(features, true);
+  const mesh = makeSculptureGroup(features, true);
   mesh.position.set(0, 0, 0);
-  mesh.userData.isDraft = true;
+  mesh.userData.meta = {
+    userName: "Your voice (draft)",
+    createdAt: new Date(),
+    formKind: features.formKind,
+    formLabel: FORM_LABELS[features.formKind] || features.formKind,
+    energyLevel: features.energyLevel,
+    emotionalTone: features.emotionalTone,
+    poeticLine: features.poeticLine,
+  };
   sceneState.boardGroup.add(mesh);
   sceneState.draftMesh = mesh;
-  setStatus("Draft sculpture generated. Publish it to the shared board.");
+  mesh.userData.savedFeatures = cloneFeaturesForStorage(features);
+  setStatus("Sculpture ready. Drag the 3D view to look around.");
   updateButtons();
 }
 
 function makeCurveFromData(data) {
+  const rand = mulberry32(data.voiceSeed);
+  const n = Math.max(56, data.radiusProfile.length * 5);
+  const bn = data.bandNormalized || [0.25, 0.25, 0.25, 0.25];
+
+  const turns = 1.15 + rand() * 4.8 + data.dynamicRange * 5.2 + data.spectralSpread * 6.5;
+  const chirality = rand() > 0.5 ? 1 : -1;
+  const baseR = 0.28 + data.avgVolume * 2.9 + bn[2] * 2.1 + bn[3] * 0.9;
+  const radialMod = 0.2 + data.spectralSpread * 1.35 + rand() * 0.55;
+  const wobbleAmp = 0.1 + data.dynamicRange * 0.62 + rand() * 0.38 + data.temporalVolatility * 0.45;
+  const detailFreq = 2.1 + rand() * 5.5 + data.peakiness * 0.75;
+  const lissX = 0.85 + rand() * 2.4 + data.temporalVolatility * 3.2;
+  const lissY = 0.85 + rand() * 2.4 + data.avgVolume * 1.8;
+  const lissZ = 0.85 + rand() * 2.4 + data.zeroCrossRate * 2.2;
+  const phaseXY = rand() * Math.PI * 2;
+  const phaseYZ = rand() * Math.PI * 2;
+  const verticalWarp = data.roughness * (0.35 + rand() * 0.85);
+  const lift = data.height;
+  const squash = 0.62 + rand() * 0.58;
+  const bend = data.bandTilt * 0.55 + (rand() - 0.5) * data.spectralSpread * 1.2;
+
+  const freqA = 1.65 + (data.voiceSeed % 31) * 0.072;
+  const freqB = 2.85 + ((data.voiceSeed >>> 8) % 29) * 0.081;
+  const tension = 0.1 + ((data.voiceSeed >>> 16) % 9) * 0.018;
+
   const points = [];
-  const n = Math.max(40, data.radiusProfile.length * 4);
-  const turns = 2.4 + data.dynamicRange * 3.2;
-  const baseR = 0.9 + data.avgVolume * 2;
   for (let i = 0; i < n; i += 1) {
     const t = i / (n - 1);
-    const a = t * Math.PI * 2 * turns;
-    const rIdx = Math.floor(t * (data.radiusProfile.length - 1));
-    const wIdx = Math.floor(t * (data.waveformProfile.length - 1));
-    const radial = baseR + data.radiusProfile[rIdx];
-    const wobble = data.waveformProfile[wIdx] * (0.2 + data.roughness * 0.35);
-    const detail = Math.sin(a * 3.3) * (data.roughness * 0.35);
-    const radius = radial + wobble + detail;
+    const a = t * Math.PI * 2 * turns * chirality;
+    const rIdx = Math.min(data.radiusProfile.length - 1, Math.floor(t * (data.radiusProfile.length - 1)));
+    const wIdx = Math.min(data.waveformProfile.length - 1, Math.floor(t * (data.waveformProfile.length - 1)));
+    const rp = data.radiusProfile[rIdx];
+    const wf = data.waveformProfile[wIdx];
+    let radial = baseR + rp * radialMod + wf * wobbleAmp;
+    radial += Math.sin(a * detailFreq) * data.roughness * 0.48;
+    radial += Math.cos(a * freqA + phaseXY) * data.spectralSpread * 0.72;
 
-    const x = Math.cos(a) * radius;
-    const y = (t - 0.5) * data.height + Math.sin(a * 0.5) * data.dynamicRange * 1.6;
-    const z = Math.sin(a) * radius;
+    let x = Math.cos(a) * radial;
+    let z = Math.sin(a) * radial;
+    let y = (t - 0.5) * lift * squash;
+
+    x += Math.sin(a * lissX + phaseXY) * (0.28 + bn[0] * 0.35);
+    y += Math.cos(a * lissY + phaseYZ) * (0.22 + data.avgVolume * 0.55) + Math.sin(a * freqB) * verticalWarp;
+    z += Math.sin(a * lissZ) * (0.24 + data.zeroCrossRate * 0.45);
+
+    x += bend * Math.sin(t * Math.PI * 2);
+    z += bend * Math.cos(t * Math.PI * 2.3) * 0.85;
+
     points.push(new THREE.Vector3(x, y, z));
   }
-  return new THREE.CatmullRomCurve3(points, false, "catmullrom", 0.2);
+  return new THREE.CatmullRomCurve3(points, false, "catmullrom", tension);
 }
 
-// Geometry generation for poetic helical voice sculptures.
-function makeSculptureMesh(data, isOwn) {
-  const curve = makeCurveFromData(data);
-  const radius = 0.12 + data.avgVolume * 0.55 + (1 - data.dominantFreq / 4) * 0.15;
-  const geometry = new THREE.TubeGeometry(curve, 260, radius, 18, false);
-  if (!geometry.attributes.position) throw new Error("Invalid geometry data");
+function disposeSculptureResources(root) {
+  const geos = new Set();
+  const mats = new Set();
+  root.traverse((o) => {
+    if (o.geometry) geos.add(o.geometry);
+    if (o.material) {
+      const ms = Array.isArray(o.material) ? o.material : [o.material];
+      ms.forEach((m) => m && mats.add(m));
+    }
+  });
+  geos.forEach((g) => g.dispose());
+  mats.forEach((m) => {
+    if (m.map) m.map.dispose();
+    m.dispose?.();
+  });
+}
+
+function volScaleFactor(data) {
+  return 0.36 + Math.min(1, data.avgVolume * 3.9) * 0.82;
+}
+
+function baseColor(data, formKind) {
+  const hueShift = { tube: 0, spiky: 0.028, hollow: 0.05, boxy: -0.032, ribbon: 0.065 }[formKind] || 0;
+  let h = data.hue + hueShift;
+  h = ((h % 1) + 1) % 1;
+  const sat = 0.58 + ((data.voiceSeed >>> 2) % 19) * 0.012;
+  const light = Math.min(
+    0.8,
+    Math.max(0.32, data.brightness + ((((data.voiceSeed >>> 9) % 9) - 4) * 0.022))
+  );
+  return new THREE.Color().setHSL(h, sat, light);
+}
+
+function emissiveAccent(color, voiceSeed, isOwn) {
+  const e = color.clone();
+  const dh = (((voiceSeed >>> 6) % 25) - 12) * 0.004;
+  e.offsetHSL(dh, 0.14, 0.06);
+  e.multiplyScalar(isOwn ? 0.26 : 0.11);
+  return e;
+}
+
+function applyDisplacementToTubeGeometry(geometry, data, mode) {
+  const disp = mulberry32(data.voiceSeed + 1337);
+  const f1 = 0.75 + disp() * 3.4;
+  const f2 = 0.75 + disp() * 3.4;
+  const f3 = 0.75 + disp() * 3.4;
+  const f4 = 0.75 + disp() * 3.4;
+  let dispAmp = data.roughness * (0.14 + disp() * 0.44) + data.spectralSpread * 0.14;
+  dispAmp *= 1 + data.dynamicRange * 2.3;
 
   const pos = geometry.attributes.position;
   const normal = geometry.attributes.normal;
@@ -500,308 +815,439 @@ function makeSculptureMesh(data, isOwn) {
     const x = pos.getX(i);
     const y = pos.getY(i);
     const z = pos.getZ(i);
-    const noise = (Math.sin(x * 1.8) + Math.cos(y * 2.1) + Math.sin(z * 2.4)) / 3;
-    const d = noise * data.roughness * 0.28;
+    let noise =
+      Math.sin(x * f1 + y * f2) * Math.cos(z * f3) * 0.55 +
+      Math.sin(x * f4 + z * f2) * 0.35 +
+      Math.cos(y * f3 - x * f1) * 0.25;
+    if (mode === "spiky") {
+      const spike = Math.sign(noise) * Math.pow(Math.min(1, Math.abs(noise) + 0.1), 0.32);
+      noise = spike * 1.72 + noise * 0.28;
+    }
+    const d = noise * dispAmp * (mode === "spiky" ? 1.35 : 1);
     pos.setXYZ(i, x + nx * d, y + ny * d, z + nz * d);
   }
   pos.needsUpdate = true;
   geometry.computeVertexNormals();
+}
 
-  const color = new THREE.Color().setHSL(data.hue, 0.62, data.brightness);
-  const material = new THREE.MeshPhysicalMaterial({
-    color,
-    emissive: color.clone().multiplyScalar(isOwn ? 0.2 : 0.08),
-    roughness: 0.22 + data.roughness * 0.4,
-    metalness: 0.07,
-    clearcoat: 0.7,
-    clearcoatRoughness: 0.25,
-    transmission: 0.12,
-    opacity: 0.97,
+function alignInstanceToCurve(dummy, curve, u, tangentRef, pt, scaleVec) {
+  curve.getPointAt(u, pt);
+  curve.getTangentAt(u, tangentRef).normalize();
+  dummy.position.copy(pt);
+  dummy.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tangentRef);
+  dummy.scale.copy(scaleVec);
+  dummy.updateMatrix();
+}
+
+function buildTubeSculpture(data, curve, isOwn, mode) {
+  const r = mulberry32(data.voiceSeed + 777);
+  const vs = volScaleFactor(data);
+  const tubeR =
+    (0.042 +
+      data.avgVolume * 0.64 +
+      data.temporalVolatility * 0.5 +
+      r() * 0.24 +
+      (1 - data.dominantFreq / 3.5) * 0.08) *
+    vs;
+  const tubularSeg = 118 + Math.floor(r() * 175);
+  const radialSeg =
+    mode === "spiky" ? 8 + Math.floor(r() * 11) : 6 + Math.floor(r() * 13);
+  const geo = new THREE.TubeGeometry(curve, tubularSeg, tubeR, radialSeg, false);
+  applyDisplacementToTubeGeometry(geo, data, mode);
+
+  const fk = mode === "spiky" ? "spiky" : "tube";
+  const col = baseColor(data, fk);
+  const mat = new THREE.MeshPhysicalMaterial({
+    color: col,
+    emissive: emissiveAccent(col, data.voiceSeed, isOwn),
+    roughness: mode === "spiky" ? 0.32 + data.roughness * 0.52 : 0.14 + data.roughness * 0.42,
+    metalness: mode === "spiky" ? 0.12 + ((data.voiceSeed >>> 10) % 8) * 0.018 : 0.05 + ((data.voiceSeed >>> 12) % 10) * 0.006,
+    clearcoat: mode === "spiky" ? 0.28 : 0.66,
+    clearcoatRoughness: mode === "spiky" ? 0.52 : 0.22 + ((data.voiceSeed >>> 20) % 8) * 0.02,
+    transmission: mode === "spiky" ? 0.05 : 0.1 + ((data.voiceSeed >>> 4) % 6) * 0.02,
+    opacity: 0.96,
     transparent: true,
+    flatShading: mode === "spiky",
+    polygonOffset: true,
+    polygonOffsetFactor: 1,
+    polygonOffsetUnits: 1,
   });
+  return new THREE.Mesh(geo, mat);
+}
 
-  const mesh = new THREE.Mesh(geometry, material);
-  const baseScale = isOwn ? 1.1 : 1.0;
-  mesh.scale.setScalar(0.001);
-  mesh.userData = {
-    id: null,
-    isOwn,
-    targetScale: baseScale,
-    pulse: 1.0,
-    hover: 0,
-    bornAt: performance.now(),
-    driftPhase: Math.random() * Math.PI * 2,
-  };
-  return mesh;
+function buildHollowSculpture(data, curve, isOwn) {
+  const r = mulberry32(data.voiceSeed + 2020);
+  const vs = volScaleFactor(data);
+  const tubeR = (0.055 + data.avgVolume * 0.52) * vs;
+  const geo = new THREE.TubeGeometry(curve, 105 + Math.floor(r() * 95), tubeR, 10, false);
+  applyDisplacementToTubeGeometry(geo, data, "smooth");
+
+  const col = baseColor(data, "hollow");
+  const shellEm = emissiveAccent(col, data.voiceSeed, isOwn);
+  if (!isOwn) shellEm.multiplyScalar(0.62);
+  const shell = new THREE.MeshPhysicalMaterial({
+    color: col,
+    emissive: shellEm,
+    metalness: 0.03,
+    roughness: 0.1,
+    transmission: 0.74,
+    thickness: 1,
+    transparent: true,
+    opacity: 0.36,
+    depthWrite: false,
+    clearcoat: 0.45,
+    clearcoatRoughness: 0.32,
+    side: THREE.DoubleSide,
+    polygonOffset: true,
+    polygonOffsetFactor: 1,
+    polygonOffsetUnits: 1,
+  });
+  const mesh = new THREE.Mesh(geo, shell);
+  const edgeGeo = new THREE.EdgesGeometry(geo, 26);
+  const edgeHex = col.clone().offsetHSL(0.07, 0.38, 0.26).getHex();
+  const lines = new THREE.LineSegments(
+    edgeGeo,
+    new THREE.LineBasicMaterial({ color: edgeHex, transparent: true, opacity: 0.55 })
+  );
+  return [mesh, lines];
+}
+
+function buildBoxySculpture(data, curve, isOwn) {
+  const r = mulberry32(data.voiceSeed + 3030);
+  const count = 34 + Math.floor(r() * 34);
+  const vs = volScaleFactor(data);
+  const dr = 1 + data.dynamicRange * 2.5;
+  const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+  const col = baseColor(data, "boxy");
+  const mat = new THREE.MeshStandardMaterial({
+    color: col,
+    emissive: emissiveAccent(col, data.voiceSeed, isOwn),
+    roughness: 0.4 + r() * 0.28,
+    metalness: 0.16 + r() * 0.22,
+    flatShading: true,
+    polygonOffset: true,
+    polygonOffsetFactor: 1,
+    polygonOffsetUnits: 1,
+  });
+  const inst = new THREE.InstancedMesh(boxGeo, mat, count);
+  const dummy = new THREE.Object3D();
+  const pt = new THREE.Vector3();
+  const tan = new THREE.Vector3();
+  const sc = new THREE.Vector3();
+  for (let i = 0; i < count; i += 1) {
+    const u = count > 1 ? i / (count - 1) : 0;
+    const s = (0.13 + data.avgVolume * 0.52) * vs * dr * (0.52 + r() * 0.58);
+    sc.set(s * (0.82 + r() * 0.38), s * (1.08 + r() * 0.42), s * (0.78 + r() * 0.4));
+    alignInstanceToCurve(dummy, curve, u, tan, pt, sc);
+    inst.setMatrixAt(i, dummy.matrix);
+  }
+  inst.instanceMatrix.needsUpdate = true;
+  return inst;
+}
+
+function buildRibbonSculpture(data, curve, isOwn) {
+  const r = mulberry32(data.voiceSeed + 4141);
+  const count = 92 + Math.floor(r() * 52);
+  const vs = volScaleFactor(data);
+  const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+  const col = baseColor(data, "ribbon");
+  const mat = new THREE.MeshPhysicalMaterial({
+    color: col,
+    emissive: emissiveAccent(col, data.voiceSeed, isOwn),
+    roughness: 0.06 + r() * 0.14,
+    metalness: 0.04,
+    clearcoat: 0.82,
+    clearcoatRoughness: 0.11,
+    transmission: 0.1,
+    transparent: true,
+    opacity: 0.93,
+    polygonOffset: true,
+    polygonOffsetFactor: 1,
+    polygonOffsetUnits: 1,
+  });
+  const inst = new THREE.InstancedMesh(boxGeo, mat, count);
+  const dummy = new THREE.Object3D();
+  const pt = new THREE.Vector3();
+  const tan = new THREE.Vector3();
+  const sc = new THREE.Vector3();
+  const wid = (0.62 + data.dynamicRange * 1.25) * vs * (0.58 + r() * 0.48);
+  const th = (0.035 + data.avgVolume * 0.14 + 0.05) * vs;
+  const dep = (0.1 + r() * 0.12) * vs;
+  for (let i = 0; i < count; i += 1) {
+    const u = count > 1 ? i / (count - 1) : 0;
+    sc.set(wid, Math.max(0.06, th) * 2.4, dep);
+    alignInstanceToCurve(dummy, curve, u, tan, pt, sc);
+    inst.setMatrixAt(i, dummy.matrix);
+  }
+  inst.instanceMatrix.needsUpdate = true;
+  return inst;
+}
+
+function makeSculptureGroup(data, isOwn) {
+  const curve = makeCurveFromData(data);
+  const group = new THREE.Group();
+  group.userData.isSculptureRoot = true;
+  const kind = data.formKind || "tube";
+  const rEnd = mulberry32(data.voiceSeed + 8888);
+
+  if (kind === "hollow") {
+    buildHollowSculpture(data, curve, isOwn).forEach((p) => group.add(p));
+  } else if (kind === "boxy") {
+    group.add(buildBoxySculpture(data, curve, isOwn));
+  } else if (kind === "ribbon") {
+    group.add(buildRibbonSculpture(data, curve, isOwn));
+  } else if (kind === "spiky") {
+    group.add(buildTubeSculpture(data, curve, isOwn, "spiky"));
+  } else {
+    group.add(buildTubeSculpture(data, curve, isOwn, "smooth"));
+  }
+
+  const baseScale = isOwn ? 1.1 : 0.74 + rEnd() * 0.18;
+  group.scale.setScalar(0.001);
+  group.userData.id = null;
+  group.userData.isOwn = isOwn;
+  group.userData.isDraft = isOwn;
+  group.userData.targetScale = baseScale;
+  group.userData.pulse = 1;
+  group.userData.hover = 0;
+  group.userData.bornAt = performance.now();
+  group.userData.driftPhase = (data.voiceSeed % 6283) * 0.001;
+  return group;
+}
+
+function persistSharedBoardToStorage() {
+  try {
+    const items = [];
+    for (const [id, { mesh }] of sceneState.sharedBoard) {
+      const sf = mesh.userData.savedFeatures;
+      if (!sf) continue;
+      const meta = mesh.userData.meta || {};
+      items.push({
+        id,
+        features: sf,
+        meta: {
+          ...meta,
+          createdAt: meta.createdAt instanceof Date ? meta.createdAt.toISOString() : meta.createdAt,
+        },
+        position: mesh.position.toArray(),
+        targetScale: mesh.userData.targetScale ?? 0.9,
+        driftPhase: mesh.userData.driftPhase ?? 0,
+      });
+    }
+    localStorage.setItem(GALLERY_STORAGE_KEY, JSON.stringify(items));
+  } catch (e) {
+    console.warn("[gallery] persist failed", e);
+  }
+}
+
+function loadSharedBoardFromStorage() {
+  if (!THREE || !sceneState.boardGroup) return;
+  let raw;
+  try {
+    raw = localStorage.getItem(GALLERY_STORAGE_KEY);
+  } catch (e) {
+    return;
+  }
+  if (!raw) return;
+  let items;
+  try {
+    items = JSON.parse(raw);
+  } catch (e) {
+    console.warn("[gallery] bad JSON", e);
+    return;
+  }
+  if (!Array.isArray(items)) return;
+  for (const item of items) {
+    if (!item?.features || !item.id) continue;
+    try {
+      const features = item.features;
+      const group = makeSculptureGroup(features, false);
+      group.position.fromArray(
+        Array.isArray(item.position) && item.position.length === 3 ? item.position : [0, 0, 0]
+      );
+      const ts = typeof item.targetScale === "number" ? item.targetScale : 0.9;
+      group.userData.targetScale = ts;
+      group.scale.setScalar(ts);
+      group.userData.driftPhase =
+        typeof item.driftPhase === "number" ? item.driftPhase : Math.random() * Math.PI * 2;
+      group.userData.savedFeatures = cloneFeaturesForStorage(features);
+      const m = item.meta || {};
+      group.userData.meta = {
+        ...m,
+        formLabel: m.formLabel || FORM_LABELS[m.formKind] || m.formKind,
+        createdAt: m.createdAt ? new Date(m.createdAt) : new Date(),
+      };
+      group.userData.isDraft = false;
+      group.userData.isOwn = false;
+      group.userData.isSculptureRoot = true;
+      group.userData.bornAt = performance.now();
+      group.traverse((o) => {
+        if (o.material && o.material.emissive) {
+          o.material.emissive.multiplyScalar(0.58);
+        }
+      });
+      sceneState.boardGroup.add(group);
+      sceneState.sharedBoard.set(item.id, { mesh: group });
+    } catch (err) {
+      console.warn("[gallery] skip entry", item.id, err);
+    }
+  }
 }
 
 function clearDraftMesh() {
-  if (!sceneState.draftMesh) return;
+  if (!sceneState.draftMesh || !sceneState.boardGroup) return;
   sceneState.boardGroup.remove(sceneState.draftMesh);
-  sceneState.draftMesh.geometry.dispose();
-  sceneState.draftMesh.material.dispose();
+  disposeSculptureResources(sceneState.draftMesh);
   sceneState.draftMesh = null;
 }
 
-async function publishDraft() {
-  if (state.publishInFlight || state.recording) return;
-  if (!state.draft) {
-    setStatus("Generate a sculpture first.");
-    return;
-  }
+function updateButtons() {
+  const isRecording = state.recording;
+  const audioStarting = state.audioStarting;
+  const micReady = state.micReady;
+  const hasRecording = state.frames.length >= 3;
 
-  state.publishInFlight = true;
-  updateButtons();
+  const enableMicDisabled = micReady || isRecording || audioStarting;
+  const startDisabled = !micReady || isRecording || audioStarting;
+  const stopDisabled = !isRecording;
+  const generateDisabled = isRecording || !hasRecording;
+  const resetDisabled =
+    (!state.frames.length && !state.draft && !sceneState.draftMesh) || isRecording;
 
-  try {
-    let user = state.user || auth.currentUser;
-
-    if (!user) {
-      setStatus("Please sign in to publish your sculpture.");
-      try {
-        console.log("[Firebase Auth] Publish requested while signed out; opening Google sign-in…");
-        const credential = await signInWithPopup(auth, provider);
-        user = credential?.user;
-        console.log("[Firebase Auth] Sign-in finished; continuing publish.", { uid: user?.uid });
-      } catch (err) {
-        console.error("[Firebase Auth] signInWithPopup failed (publish flow):", {
-          code: err?.code,
-          message: err?.message,
-          customData: err?.customData,
-          fullError: err,
-        });
-        if (err?.code === "auth/popup-blocked") {
-          setStatus("Pop-up was blocked. Allow pop-ups for this site, then try Publish again.");
-        } else if (err?.code === "auth/popup-closed-by-user") {
-          setStatus("Sign-in was cancelled. Sign in when you’re ready to publish.");
-        } else if (err?.code === "auth/unauthorized-domain") {
-          setStatus("This domain is not authorized for Firebase Auth. Add it in Firebase Console → Authentication → Settings.");
-        } else {
-          setStatus(`Sign-in failed${err?.code ? ` (${err.code})` : ""}. See console for details.`);
-        }
-        return;
-      }
-    }
-
-    if (!user) {
-      setStatus("Sign-in did not complete. Try Publish again after signing in.");
-      return;
-    }
-
-    await writePublishedSculpture(user);
-  } finally {
-    state.publishInFlight = false;
-    updateButtons();
-  }
+  if (ui.enableMicBtn) ui.enableMicBtn.disabled = enableMicDisabled;
+  if (ui.startBtn) ui.startBtn.disabled = startDisabled;
+  if (ui.stopBtn) ui.stopBtn.disabled = stopDisabled;
+  if (ui.generateBtn) ui.generateBtn.disabled = generateDisabled;
+  if (ui.resetBtn) ui.resetBtn.disabled = resetDisabled;
 }
 
-async function writePublishedSculpture(user) {
-  setStatus("Publishing to the shared space…");
-  const position = findOpenPosition();
-  const docData = {
-    userId: user.uid,
-    userName: user.displayName || "Unknown",
-    userPhoto: user.photoURL || "",
-    createdAt: serverTimestamp(),
-    avgVolume: state.draft.avgVolume,
-    maxVolume: state.draft.maxVolume,
-    dominantFreq: state.draft.dominantFreq,
-    spectralCentroid: state.draft.spectralCentroid,
-    dynamicRange: state.draft.dynamicRange,
-    radiusProfile: state.draft.radiusProfile,
-    waveformProfile: state.draft.waveformProfile,
-    height: state.draft.height,
-    roughness: state.draft.roughness,
-    hue: state.draft.hue,
-    brightness: state.draft.brightness,
-    position,
-  };
-
-  try {
-    const ref = await addDoc(sculpturesCol, docData);
-    state.lastPublishedId = ref.id;
-    setStatus("Published. Your frozen voice joined the shared constellation.");
-    clearDraftMesh();
-    state.draft = null;
-    updateButtons();
-  } catch (err) {
-    console.error("[Firestore] publish failed:", err);
-    setStatus("Publish failed. Please try again.");
-  }
-}
-
-function findOpenPosition() {
+function findSharePosition() {
   const taken = [];
-  for (const item of sceneState.sculptures.values()) {
-    taken.push(item.mesh.position.clone());
+  for (const { mesh } of sceneState.sharedBoard.values()) {
+    taken.push(mesh.position);
   }
-
-  for (let attempt = 0; attempt < 70; attempt += 1) {
+  const n = taken.length;
+  const spread = 44;
+  const minR = 4;
+  const minDist = 6.5;
+  for (let k = 0; k < 180; k += 1) {
     const p = new THREE.Vector3(
-      THREE.MathUtils.randFloatSpread(BOARD_BOUNDS),
-      THREE.MathUtils.randFloat(-7, 7),
-      THREE.MathUtils.randFloatSpread(BOARD_BOUNDS)
+      (Math.random() - 0.5) * spread * 2,
+      (Math.random() - 0.5) * 16,
+      (Math.random() - 0.5) * spread * 2
     );
+    if (p.length() < minR) continue;
+    p.y += Math.sin((n + k) * 2.17) * 5.8 + ((n * 3 + k) % 5) * 1.15;
     let ok = true;
     for (const t of taken) {
-      if (p.distanceTo(t) < 4.2) {
+      const dy = Math.abs(p.y - t.y);
+      const horiz = Math.hypot(p.x - t.x, p.z - t.z);
+      const effective = horiz + dy * 0.35;
+      if (effective < minDist && p.distanceTo(t) < minDist + 1.2) {
         ok = false;
         break;
       }
     }
-    if (ok) return { x: Number(p.x.toFixed(3)), y: Number(p.y.toFixed(3)), z: Number(p.z.toFixed(3)) };
+    if (ok) return p;
   }
-  return { x: 0, y: 0, z: 0 };
+  return new THREE.Vector3(
+    (Math.random() - 0.5) * 40,
+    Math.sin(n * 1.9) * 8 + (Math.random() - 0.5) * 6,
+    (Math.random() - 0.5) * 40
+  );
 }
 
-function listenToSculptures() {
-  const q = query(sculpturesCol, orderBy("createdAt", "desc"), limit(MAX_SCULPTURES));
-  onSnapshot(
-    q,
-    (snap) => {
-      const incoming = new Set();
-      snap.forEach((docSnap) => {
-        incoming.add(docSnap.id);
-        if (!sceneState.sculptures.has(docSnap.id)) {
-          const data = docSnap.data();
-          if (!isDocValid(data)) return;
-          addBoardSculpture(docSnap.id, data);
-        }
-      });
-
-      for (const [id, item] of sceneState.sculptures.entries()) {
-        if (!incoming.has(id)) {
-          sceneState.boardGroup.remove(item.mesh);
-          item.mesh.geometry.dispose();
-          item.mesh.material.dispose();
-          sceneState.sculptures.delete(id);
-        }
-      }
-    },
-    (err) => {
-      console.error(err);
-      setStatus("Live board sync failed. Check Firebase permissions.");
+function archiveDraftToShareBoard(displayName) {
+  const mesh = sceneState.draftMesh;
+  if (!mesh || !sceneState.boardGroup) return;
+  const name = (displayName || "").trim() || "Anonymous";
+  mesh.position.copy(findSharePosition());
+  mesh.userData.isDraft = false;
+  mesh.userData.isOwn = false;
+  /** Draft animates scale from ~0.001 — if user saves early, the piece stays microscopic. Snap to full gallery size. */
+  const targetScale = 0.82 + Math.random() * 0.14;
+  mesh.userData.targetScale = targetScale;
+  mesh.scale.setScalar(targetScale);
+  mesh.visible = true;
+  mesh.updateMatrixWorld(true);
+  const prev = mesh.userData.meta || {};
+  mesh.userData.meta = {
+    ...prev,
+    userName: name,
+    createdAt: new Date(),
+  };
+  mesh.traverse((o) => {
+    if (o.material && o.material.emissive) {
+      o.material.emissive.multiplyScalar(0.58);
     }
-  );
+  });
+  const id = `share-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  sceneState.sharedBoard.set(id, { mesh });
+  sceneState.draftMesh = null;
+  state.draft = null;
+  persistSharedBoardToStorage();
 }
 
-function isDocValid(d) {
-  return (
-    d &&
-    Array.isArray(d.radiusProfile) &&
-    Array.isArray(d.waveformProfile) &&
-    d.radiusProfile.length > 2 &&
-    d.waveformProfile.length > 2 &&
-    typeof d.position?.x === "number" &&
-    typeof d.position?.y === "number" &&
-    typeof d.position?.z === "number"
-  );
-}
-
-function addBoardSculpture(id, data) {
-  try {
-    const isOwn = state.user && data.userId === state.user.uid;
-    const mesh = makeSculptureMesh(data, isOwn);
-    mesh.userData.id = id;
-    mesh.position.set(data.position.x, data.position.y, data.position.z);
-    mesh.userData.meta = {
-      userName: data.userName || "Unknown",
-      createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : null,
-      isOwn,
-    };
-
-    if (id === state.lastPublishedId) mesh.userData.pulse = 1.7;
-
-    sceneState.boardGroup.add(mesh);
-    sceneState.sculptures.set(id, { mesh, data });
-  } catch (err) {
-    console.error("Invalid sculpture entry:", err);
-  }
-}
-
-function updateButtons() {
-  const currentUser = auth.currentUser;
-  const logged = !!state.user;
-
-  const micReady = state.micReady;
-  const isRecording = state.recording;
-  const audioStarting = state.audioStarting;
-  const hasRecording = state.frames.length >= 3;
-  const hasGeneratedSculpture = !!state.draft;
-
-  // --- Auth-only (never use this for record / generate / reset) ---
-  if (ui.loginBtn) ui.loginBtn.disabled = logged;
-  if (ui.logoutBtn) ui.logoutBtn.disabled = !logged;
-
-  // --- Voice pipeline: Record requests mic on first use; NOT gated on login ---
-  const startDisabled = isRecording || audioStarting;
-  const stopDisabled = !isRecording;
-  const generateDisabled = isRecording || !hasRecording;
-  const publishDisabled = !hasGeneratedSculpture || isRecording || state.publishInFlight;
-  const resetDisabled = (!state.frames.length && !state.draft) || isRecording;
-
-  if (ui.startBtn) ui.startBtn.disabled = startDisabled;
-  if (ui.stopBtn) ui.stopBtn.disabled = stopDisabled;
-  if (ui.generateBtn) ui.generateBtn.disabled = generateDisabled;
-  if (ui.publishBtn) ui.publishBtn.disabled = publishDisabled;
-  if (ui.resetBtn) ui.resetBtn.disabled = resetDisabled;
-
-  if (typeof window !== "undefined" && window.__DEBUG_BUTTONS__) {
-    console.log("[updateButtons]", {
-      currentUser: currentUser ? { uid: currentUser.uid, email: currentUser.email } : null,
-      stateUser: state.user ? { uid: state.user.uid } : null,
-      micReady,
-      audioStarting,
-      isRecording,
-      hasRecording,
-      hasGeneratedSculpture,
-      framesCount: state.frames.length,
-      publishInFlight: state.publishInFlight,
-      buttonsDisabled: {
-        login: ui.loginBtn?.disabled,
-        logout: ui.logoutBtn?.disabled,
-        start: ui.startBtn?.disabled,
-        stop: ui.stopBtn?.disabled,
-        generate: ui.generateBtn?.disabled,
-        publish: ui.publishBtn?.disabled,
-        reset: ui.resetBtn?.disabled,
-      },
-    });
-  }
-}
-
-function resetDraft() {
+function clearRecordingStateOnly() {
   stopRecording();
-  clearDraftMesh();
   state.frames = [];
   state.draft = null;
-  ui.frameCount.textContent = "0";
-  ui.avgVolume.textContent = "-";
-  ui.domFreq.textContent = "-";
-  ui.dynRange.textContent = "-";
-  if (state.user) {
-    setStatus("Ready for a new voice.");
-  } else {
-    statusLoggedOut();
-  }
+  if (ui.frameCount) ui.frameCount.textContent = "0";
+  if (ui.avgVolume) ui.avgVolume.textContent = "-";
+  if (ui.domFreq) ui.domFreq.textContent = "-";
+  if (ui.dynRange) ui.dynRange.textContent = "-";
+  setStatus("Tap Enable Microphone, then Start Recording.");
   updateButtons();
 }
 
+function openResetModal() {
+  if (!THREE || !sceneState.boardGroup) {
+    clearRecordingStateOnly();
+    return;
+  }
+  if (sceneState.draftMesh) {
+    if (ui.resetNameInput) ui.resetNameInput.value = "";
+    ui.resetModal?.classList.remove("hidden");
+    ui.resetModal?.setAttribute("aria-hidden", "false");
+    ui.resetNameInput?.focus();
+    return;
+  }
+  clearRecordingStateOnly();
+}
+
+function closeResetModal() {
+  ui.resetModal?.classList.add("hidden");
+  ui.resetModal?.setAttribute("aria-hidden", "true");
+}
+
+function confirmResetModal() {
+  if (!THREE || !sceneState.boardGroup) return;
+  const name = ui.resetNameInput?.value ?? "";
+  if (sceneState.draftMesh) archiveDraftToShareBoard(name);
+  clearRecordingStateOnly();
+  closeResetModal();
+}
+
 function setStatus(text) {
-  ui.statusText.textContent = text;
+  if (ui.statusText) ui.statusText.textContent = text;
 }
 
 function initThree() {
+  sceneState.raycaster = new THREE.Raycaster();
+  sceneState.mouse = new THREE.Vector2(999, 999);
+  sceneState.clock = new THREE.Clock();
+  sceneState.intro = 0;
+
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x04060d, 0.038);
+  scene.fog = new THREE.FogExp2(0x070a14, 0.026);
 
   const camera = new THREE.PerspectiveCamera(
-    50,
-    ui.canvasContainer.clientWidth / ui.canvasContainer.clientHeight,
+    48,
+    ui.canvasContainer.clientWidth / Math.max(1, ui.canvasContainer.clientHeight),
     0.1,
-    200
+    260
   );
-  camera.position.set(0, 12, 36);
+  camera.position.set(0, 16, 52);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -813,19 +1259,31 @@ function initThree() {
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
   controls.target.set(0, 0, 0);
-  controls.minDistance = 7;
-  controls.maxDistance = 80;
+  controls.minDistance = 10;
+  controls.maxDistance = 130;
 
-  const ambient = new THREE.AmbientLight(0x8f9dd7, 0.42);
-  const directional = new THREE.DirectionalLight(0xbfd2ff, 0.82);
-  directional.position.set(7, 8, 4);
-  const point = new THREE.PointLight(0x7fa8ff, 0.95, 110, 2);
-  point.position.set(-7, 5, -9);
-  const memoryLight = new THREE.PointLight(0xb07fff, 0.52, 120, 2);
-  memoryLight.position.set(9, 2, 8);
-  scene.add(ambient, directional, point, memoryLight);
+  const ambient = new THREE.AmbientLight(0x9aa8d8, 0.36);
+  const directional = new THREE.DirectionalLight(0xc8d8ff, 0.72);
+  directional.position.set(12, 18, 8);
+  const fill = new THREE.DirectionalLight(0x8899cc, 0.28);
+  fill.position.set(-14, 6, -10);
+  const point = new THREE.PointLight(0x8fa8ff, 0.75, 180, 2);
+  point.position.set(-18, 10, -14);
+  const memoryLight = new THREE.PointLight(0xc4a8ff, 0.42, 200, 2);
+  memoryLight.position.set(16, 4, 12);
+  scene.add(ambient, directional, fill, point, memoryLight);
 
   const boardGroup = new THREE.Group();
+  const galleryGrid = new THREE.GridHelper(140, 56, 0x2a3558, 0x141a2e);
+  galleryGrid.position.y = -18;
+  const gm = galleryGrid.material;
+  const gMats = Array.isArray(gm) ? gm : gm ? [gm] : [];
+  for (const m of gMats) {
+    m.transparent = true;
+    m.opacity = 0.12;
+    m.depthWrite = false;
+  }
+  boardGroup.add(galleryGrid);
   scene.add(boardGroup);
   scene.add(makeParticles());
 
@@ -838,11 +1296,11 @@ function initThree() {
 }
 
 function makeParticles() {
-  const count = 1400;
+  const count = 2200;
   const positions = new Float32Array(count * 3);
   const colors = new Float32Array(count * 3);
   for (let i = 0; i < count; i += 1) {
-    const r = 18 + Math.random() * 58;
+    const r = 22 + Math.random() * 72;
     const t = Math.random() * Math.PI * 2;
     const p = Math.acos(2 * Math.random() - 1);
     const x = r * Math.sin(p) * Math.cos(t);
@@ -868,86 +1326,125 @@ function makeParticles() {
 }
 
 function onPointerMove(evt) {
+  if (!sceneState.mouse || !ui.canvasContainer) return;
   const r = ui.canvasContainer.getBoundingClientRect();
   sceneState.mouse.x = ((evt.clientX - r.left) / r.width) * 2 - 1;
   sceneState.mouse.y = -((evt.clientY - r.top) / r.height) * 2 + 1;
 }
 
 function onPointerLeave() {
-  sceneState.mouse.set(999, 999);
-  ui.tooltip.classList.add("hidden");
+  if (sceneState.mouse) sceneState.mouse.set(999, 999);
+  if (ui.tooltip) ui.tooltip.classList.add("hidden");
   sceneState.hovered = null;
 }
 
 function onCanvasClick() {
-  if (!sceneState.hovered) return;
-  const target = sceneState.hovered.mesh.position.clone();
+  if (!sceneState.hovered || !THREE || !sceneState.controls || !sceneState.camera) return;
+  const target = new THREE.Vector3();
+  sceneState.hovered.mesh.getWorldPosition(target);
   sceneState.controls.target.lerp(target, 0.35);
-  sceneState.camera.position.lerp(target.clone().add(new THREE.Vector3(0, 2.8, 6.5)), 0.35);
+  sceneState.camera.position.lerp(target.clone().add(new THREE.Vector3(0, 3.2, 8)), 0.35);
+}
+
+function findSculptureRoot(obj) {
+  let o = obj;
+  while (o && !o.userData?.isSculptureRoot) o = o.parent;
+  return o;
 }
 
 function updateHover() {
-  const meshes = [...sceneState.sculptures.values()].map((x) => x.mesh);
-  if (!meshes.length) return;
+  if (!sceneState.raycaster || !sceneState.mouse || !sceneState.camera) return;
+  const roots = [
+    sceneState.draftMesh,
+    ...[...sceneState.sharedBoard.values()].map((x) => x.mesh),
+  ].filter(Boolean);
+  if (!roots.length) {
+    sceneState.hovered = null;
+    if (ui.tooltip) ui.tooltip.classList.add("hidden");
+    return;
+  }
   sceneState.raycaster.setFromCamera(sceneState.mouse, sceneState.camera);
-  const hit = sceneState.raycaster.intersectObjects(meshes)[0];
+  const hit = sceneState.raycaster.intersectObjects(roots, true)[0];
 
-  if (hit) {
-    sceneState.hovered = { mesh: hit.object };
-    const m = hit.object.userData.meta || {};
-    const ts = m.createdAt ? m.createdAt.toLocaleString() : "recent";
-    ui.tooltip.innerHTML = `<strong>${m.userName || "Unknown"}</strong><br/>Voice Sculpture Memory<br/>${ts}`;
+  if (hit && ui.tooltip) {
+    const root = findSculptureRoot(hit.object);
+    if (!root) {
+      sceneState.hovered = null;
+      ui.tooltip.classList.add("hidden");
+      return;
+    }
+    sceneState.hovered = { mesh: root };
+    const m = root.userData.meta || {};
+    const ts = m.createdAt instanceof Date ? m.createdAt.toLocaleString() : "recent";
+    const form = m.formLabel || FORM_LABELS[m.formKind] || "Voice form";
+    const energy = m.energyLevel || "—";
+    const tone = m.emotionalTone || "—";
+    const poem = m.poeticLine
+      ? `<div class="tooltip-poem">${escapeHtml(m.poeticLine)}</div>`
+      : "";
+    ui.tooltip.innerHTML = `<strong>${escapeHtml(m.userName || "Unknown")}</strong><div class="tooltip-meta">${escapeHtml(form)} · Energy: ${escapeHtml(energy)} · ${escapeHtml(tone)}</div>${poem}<div class="tooltip-ts">${escapeHtml(ts)}</div>`;
     ui.tooltip.style.left = `${((sceneState.mouse.x + 1) * 0.5 * window.innerWidth + 14).toFixed(0)}px`;
     ui.tooltip.style.top = `${((1 - (sceneState.mouse.y + 1) * 0.5) * window.innerHeight + 14).toFixed(0)}px`;
     ui.tooltip.classList.remove("hidden");
   } else {
     sceneState.hovered = null;
-    ui.tooltip.classList.add("hidden");
+    if (ui.tooltip) ui.tooltip.classList.add("hidden");
   }
 }
 
-// Animation loop for drift, rotation, pulse, intro camera, and hover effects.
 function animate() {
   requestAnimationFrame(animate);
-  if (!sceneState.renderer || !sceneState.scene || !sceneState.camera) {
+  if (!sceneState.renderer || !sceneState.scene || !sceneState.camera || !sceneState.clock || !sceneState.boardGroup) {
     return;
   }
   const t = sceneState.clock.getElapsedTime();
 
   if (sceneState.intro < 1) {
     sceneState.intro = Math.min(1, sceneState.intro + 0.004);
-    sceneState.camera.position.lerp(new THREE.Vector3(0, 7, 23), sceneState.intro * 0.03);
+    sceneState.camera.position.lerp(new THREE.Vector3(0, 11, 30), sceneState.intro * 0.03);
     sceneState.controls.target.lerp(new THREE.Vector3(0, 0, 0), sceneState.intro * 0.03);
   }
 
   sceneState.controls.update();
   updateHover();
 
-  for (const { mesh } of sceneState.sculptures.values()) {
+  for (const { mesh } of sceneState.sharedBoard.values()) {
     const ud = mesh.userData;
     const age = (performance.now() - ud.bornAt) / 1000;
-    const scaleTarget = ud.targetScale + (sceneState.hovered?.mesh === mesh ? 0.06 : 0);
+    const scaleTarget = ud.targetScale + (sceneState.hovered?.mesh === mesh ? 0.07 : 0);
     const current = mesh.scale.x;
     mesh.scale.setScalar(current + (scaleTarget - current) * 0.08);
 
-    mesh.rotation.y += 0.0011;
-    mesh.rotation.x = Math.sin(t * 0.16 + ud.driftPhase) * 0.05;
-    mesh.rotation.z = Math.cos(t * 0.13 + ud.driftPhase * 0.7) * 0.04;
-    mesh.position.y += Math.sin(t * 0.2 + ud.driftPhase + mesh.position.x * 0.08) * 0.0018;
-    mesh.position.x += Math.cos(t * 0.12 + ud.driftPhase + mesh.position.z * 0.04) * 0.0007;
+    mesh.rotation.y += 0.00095;
+    mesh.rotation.x = Math.sin(t * 0.14 + ud.driftPhase) * 0.055;
+    mesh.rotation.z = Math.cos(t * 0.11 + ud.driftPhase * 0.73) * 0.042;
+    mesh.position.y += Math.sin(t * 0.18 + ud.driftPhase + mesh.position.x * 0.07) * 0.0021;
+    mesh.position.x += Math.cos(t * 0.1 + ud.driftPhase + mesh.position.z * 0.038) * 0.00085;
+    mesh.position.z += Math.sin(t * 0.09 + ud.driftPhase * 1.1) * 0.00055;
 
     const pulse = ud.pulse > 1 ? ud.pulse - 0.007 : 1;
     ud.pulse = pulse;
-    mesh.material.emissiveIntensity = (ud.isOwn ? 0.8 : 0.32) * pulse + Math.sin(t * 0.8 + age) * 0.035;
+    const emBase = 0.34 * pulse + Math.sin(t * 0.75 + age) * 0.04;
+    mesh.traverse((o) => {
+      if (o.material && "emissiveIntensity" in o.material) {
+        o.material.emissiveIntensity = emBase;
+      }
+    });
   }
 
   if (sceneState.draftMesh) {
-    const target = 1.08;
-    const s = sceneState.draftMesh.scale.x + (target - sceneState.draftMesh.scale.x) * 0.08;
-    sceneState.draftMesh.scale.setScalar(s);
-    sceneState.draftMesh.rotation.y += 0.0018;
-    sceneState.draftMesh.position.y = Math.sin(t * 0.55) * 0.22;
-    sceneState.draftMesh.material.emissiveIntensity = 1.05 + Math.sin(t * 1.35) * 0.1;
+    const dm = sceneState.draftMesh;
+    const target = dm.userData.targetScale ?? 1.08;
+    const s = dm.scale.x + (target - dm.scale.x) * 0.08;
+    dm.scale.setScalar(s);
+    dm.rotation.y += 0.0018;
+    dm.position.y = Math.sin(t * 0.55) * 0.22;
+    const em = 1.02 + Math.sin(t * 1.35) * 0.1;
+    dm.traverse((o) => {
+      if (o.material && "emissiveIntensity" in o.material) {
+        o.material.emissiveIntensity = em;
+      }
+    });
   }
 
   if (sceneState.particles) {
@@ -955,8 +1452,8 @@ function animate() {
     sceneState.particles.rotation.x = Math.sin(t * 0.06) * 0.045;
   }
 
-  sceneState.boardGroup.position.y = Math.sin(t * 0.08 + sceneState.driftPhase) * 0.35;
-  sceneState.boardGroup.rotation.y = Math.sin(t * 0.04 + sceneState.driftPhase) * 0.08;
+  sceneState.boardGroup.position.y = Math.sin(t * 0.06 + sceneState.driftPhase) * 0.28;
+  sceneState.boardGroup.rotation.y = Math.sin(t * 0.028 + sceneState.driftPhase) * 0.045;
 
   sceneState.renderer.render(sceneState.scene, sceneState.camera);
 }
@@ -965,7 +1462,7 @@ function onResize() {
   if (!sceneState.renderer || !sceneState.camera || !ui.canvasContainer) return;
   const w = ui.canvasContainer.clientWidth;
   const h = ui.canvasContainer.clientHeight;
-  sceneState.camera.aspect = w / h;
+  sceneState.camera.aspect = w / Math.max(1, h);
   sceneState.camera.updateProjectionMatrix();
   sceneState.renderer.setSize(w, h);
 }

@@ -1,67 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sound Wave Frozen</title>
-    <link rel="stylesheet" href="./style.css" />
-  </head>
-  <body>
-    <div class="app">
-      <div class="ui-shell">
-        <header class="hero glass">
-          <h1>Sound Wave Frozen</h1>
-          <p>Record your voice and freeze it into a 3D sculpture</p>
-        </header>
 
-        <section class="top-panels">
-          <article class="auth-panel glass">
-            <div class="panel-title">Shared Space Access</div>
-            <div id="userInfo" class="user-info hidden">
-              <img id="userPhoto" alt="User profile" />
-              <div class="user-text">
-                <strong id="userName">-</strong>
-                <span id="userEmail">-</span>
-              </div>
-            </div>
-            <div class="auth-actions">
-              <button type="button" id="loginBtn">Sign in with Google</button>
-              <button type="button" id="logoutBtn" disabled>Sign out</button>
-            </div>
-          </article>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sound Wave Frozen</title>
+  <!-- OrbitControls.js imports the bare specifier "three"; without this map, that import fails and 3D never inits. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js"
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="./style.css" />
+</head>
 
-          <article class="controls-panel glass">
-            <div class="panel-title">Voice Capture</div>
-            <div class="controls">
-              <button type="button" id="startBtn">Record</button>
-              <button type="button" id="stopBtn" disabled>Stop Recording</button>
-              <button type="button" id="generateBtn" disabled>Generate Sculpture</button>
-              <button type="button" id="publishBtn" disabled>Publish to Shared Board</button>
-              <button type="button" id="resetBtn" disabled>Reset</button>
-            </div>
-          </article>
-        </section>
-
-        <section class="status-wrap glass">
-          <div class="status-label">Status</div>
-          <div id="statusText" class="status-text">
-            You can explore and generate your sculpture without signing in. Sign in to publish it to the shared space.
-          </div>
-        </section>
-
-        <section class="debug-panel glass">
-          <h2>Debug</h2>
-          <div><span>Average Volume</span><strong id="avgVolume">-</strong></div>
-          <div><span>Dominant Frequency</span><strong id="domFreq">-</strong></div>
-          <div><span>Dynamic Range</span><strong id="dynRange">-</strong></div>
-          <div><span>Frames</span><strong id="frameCount">0</strong></div>
-        </section>
+<body>
+  <div class="app">
+    <header class="top-bar glass">
+      <div class="top-bar-brand">
+        <h1>Sound Wave Frozen</h1>
+        <p class="tagline">Voice frozen into a shared 3D gallery</p>
       </div>
 
-      <section id="canvasContainer" class="canvas-container" aria-label="3D view"></section>
-    </div>
+      <div id="recordingPrompts" class="prompt-strip" aria-label="Ideas for your recording"></div>
 
-    <div id="tooltip" class="tooltip hidden"></div>
-    <script type="module" src="./script.js"></script>
-  </body>
+      <div class="top-bar-row">
+        <div id="controlsRoot" class="controls controls--compact">
+          <button type="button" id="enableMicBtn">Enable Microphone</button>
+          <button type="button" id="startBtn" disabled>Start Recording</button>
+          <button type="button" id="stopBtn" disabled>Stop Recording</button>
+          <button type="button" id="generateBtn" disabled>Generate Sculpture</button>
+          <button type="button" id="resetBtn" disabled>Save</button>
+        </div>
+        <div class="status-inline glass">
+          <span class="status-label">Status</span>
+          <span id="statusText" class="status-text">Loading…</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="gallery-section" aria-label="Shared 3D gallery">
+      <p class="gallery-label">Floating gallery</p>
+      <div id="canvasContainer" class="canvas-container" aria-label="3D view"></div>
+    </section>
+
+    <section class="debug-drawer glass">
+      <h2 class="debug-title">Debug</h2>
+      <div class="debug-grid">
+        <div><span>Average Volume</span><strong id="avgVolume">-</strong></div>
+        <div><span>Dominant band</span><strong id="domFreq">-</strong></div>
+        <div><span>Dynamic range</span><strong id="dynRange">-</strong></div>
+        <div><span>Frames</span><strong id="frameCount">0</strong></div>
+      </div>
+    </section>
+  </div>
+
+  <div id="tooltip" class="tooltip hidden" role="tooltip"></div>
+
+  <div id="resetModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card glass" role="dialog" aria-labelledby="resetModalTitle">
+      <h2 id="resetModalTitle">Send sculpture to the share board</h2>
+      <p class="modal-hint">Your current voice sculpture will keep floating in the space. Enter a name others will see.</p>
+      <label class="modal-label" for="resetNameInput">Your name</label>
+      <input type="text" id="resetNameInput" class="modal-input" maxlength="40" placeholder="e.g. River" autocomplete="nickname" />
+      <div class="modal-actions">
+        <button type="button" id="resetModalCancel" class="modal-btn secondary">Cancel</button>
+        <button type="button" id="resetModalConfirm" class="modal-btn primary">Save to board</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./script.js"></script>
+</body>
+
 </html>
