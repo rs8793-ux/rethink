@@ -1,0 +1,321 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Unbounded:wght@300;400;700&display=swap');
+
+/* ─── Reset ─── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ─── Base ─── */
+body {
+  background: #080810;
+  color: #e8e4d9;
+  font-family: 'Space Mono', monospace;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* ─── Canvas layer ─── */
+#canvas-container {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+canvas {
+  display: block;
+}
+
+/* ─── UI overlay ─── */
+#ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Header ─── */
+#header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 24px 28px 0;
+}
+
+#title-block h1 {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 0.25em;
+  color: #e8e4d9;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+#title-block p {
+  font-size: 10px;
+  color: #5a5870;
+  letter-spacing: 0.1em;
+  margin-top: 5px;
+}
+
+/* ─── Status dot ─── */
+#status-dot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: #5a5870;
+  letter-spacing: 0.08em;
+}
+
+#dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #2a2840;
+  transition: background 0.4s;
+}
+
+#dot.ready {
+  background: #a3e635;
+  box-shadow: 0 0 8px #a3e63566;
+}
+
+#dot.recording {
+  background: #f43f5e;
+  animation: pulse 0.8s ease infinite alternate;
+}
+
+/* ─── REC indicator ─── */
+#rec-indicator {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: #f43f5e;
+  letter-spacing: 0.15em;
+}
+
+#rec-indicator.show {
+  display: flex;
+}
+
+#dot2 {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f43f5e;
+}
+
+/* ─── Note display (left side) ─── */
+#note-display {
+  position: absolute;
+  left: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: left;
+}
+
+#current-note {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 52px;
+  font-weight: 700;
+  color: #a78bfa;
+  line-height: 1;
+  transition: color 0.08s;
+  min-width: 3ch;
+}
+
+#octave-display {
+  font-size: 11px;
+  color: #5a5870;
+  margin-top: 4px;
+  letter-spacing: 0.15em;
+}
+
+/* ─── Params panel (right side) ─── */
+#params-panel {
+  position: absolute;
+  right: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 200px;
+}
+
+.param {
+  position: relative;
+}
+
+.param-label {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: #5a5870;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.param-label span.val {
+  font-size: 11px;
+  font-weight: 700;
+  color: #e8e4d9;
+  letter-spacing: 0.05em;
+}
+
+.param-track {
+  height: 2px;
+  background: #1a1828;
+  border-radius: 2px;
+  overflow: visible;
+  position: relative;
+}
+
+.param-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.08s linear;
+  position: relative;
+}
+
+/* Dot cap at end of fill bar */
+.param-fill::after {
+  content: '';
+  position: absolute;
+  right: -3px;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: inherit;
+}
+
+.param-note {
+  font-size: 9px;
+  color: #3a3850;
+  margin-top: 4px;
+  letter-spacing: 0.05em;
+}
+
+/* ─── Param colors ─── */
+/* Pitch → purple */
+.p-pitch .param-fill { background: #a78bfa; }
+.p-pitch .param-fill::after { box-shadow: 0 0 8px #a78bfa88; }
+
+/* Reverb → blue */
+.p-reverb .param-fill { background: #38bdf8; }
+.p-reverb .param-fill::after { box-shadow: 0 0 8px #38bdf888; }
+
+/* BPM → orange */
+.p-bpm .param-fill { background: #fb923c; }
+.p-bpm .param-fill::after { box-shadow: 0 0 8px #fb923c88; }
+
+/* Volume → green */
+.p-vol .param-fill { background: #a3e635; }
+.p-vol .param-fill::after { box-shadow: 0 0 8px #a3e63588; }
+
+/* ─── Waveform bar (bottom) ─── */
+#waveform-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 0 8px;
+  opacity: 0.4;
+}
+
+.wv-bar {
+  flex: 1;
+  background: #a78bfa;
+  border-radius: 1px 1px 0 0;
+  transition: height 0.06s;
+  min-height: 2px;
+}
+
+/* ─── Bottom controls ─── */
+#controls {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  pointer-events: all;
+}
+
+#msg {
+  position: absolute;
+  bottom: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: #5a5870;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* ─── Buttons ─── */
+button {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  padding: 10px 20px;
+  border-radius: 2px;
+}
+
+#btn-start {
+  background: #a78bfa22;
+  color: #a78bfa;
+  border: 1px solid #a78bfa44;
+}
+#btn-start:hover { background: #a78bfa33; border-color: #a78bfa88; }
+#btn-start.active { background: #a78bfa; color: #080810; }
+
+#btn-record {
+  background: #f43f5e22;
+  color: #f43f5e;
+  border: 1px solid #f43f5e44;
+}
+#btn-record:hover { background: #f43f5e33; border-color: #f43f5e88; }
+#btn-record.recording {
+  background: #f43f5e;
+  color: #fff;
+  animation: pulse 0.8s ease infinite alternate;
+}
+
+#btn-play {
+  background: #a3e63522;
+  color: #a3e635;
+  border: 1px solid #a3e63544;
+  display: none;
+}
+#btn-play:hover { background: #a3e63533; }
+
+/* ─── Animations ─── */
+@keyframes pulse {
+  to { box-shadow: 0 0 16px #f43f5eaa; }
+}

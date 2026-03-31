@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Face Theremin</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <script src="https://unpkg.com/ml5@0.12.2/dist/ml5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <div id="canvas-container"></div>
+
+  <div id="ui">
+    <div id="header">
+      <div id="title-block">
+        <h1>Face Theremin</h1>
+        <p>ml5 FaceMesh · Tone.js · Your face is the instrument</p>
+      </div>
+      <div id="status-dot">
+        <div id="dot"></div>
+        <span id="status-text">Waiting to start</span>
+      </div>
+    </div>
+
+    <div id="rec-indicator">
+      <div id="dot2"></div>
+      REC
+    </div>
+
+    <div id="note-display">
+      <div id="current-note">—</div>
+      <div id="octave-display">PITCH</div>
+    </div>
+
+    <div id="params-panel">
+      <div class="param p-pitch">
+        <div class="param-label">
+          眉毛高度 → 音调
+          <span class="val" id="v-pitch">—</span>
+        </div>
+        <div class="param-track">
+          <div class="param-fill" id="f-pitch" style="width:0%"></div>
+        </div>
+        <div class="param-note">Higher brows → Higher pitch</div>
+      </div>
+      <div class="param p-reverb">
+        <div class="param-label">
+          Smile Curve → Reverb
+          <span class="val" id="v-reverb">—</span>
+        </div>
+        <div class="param-track">
+          <div class="param-fill" id="f-reverb" style="width:0%"></div>
+        </div>
+        <div class="param-note">Bigger smile → More space</div>
+      </div>
+      <div class="param p-bpm">
+        <div class="param-label">
+          Head Tilt → BPM
+          <span class="val" id="v-bpm">—</span>
+        </div>
+        <div class="param-track">
+          <div class="param-fill" id="f-bpm" style="width:0%"></div>
+        </div>
+        <div class="param-note">Tilt right → Faster tempo</div>
+      </div>
+      <div class="param p-vol">
+        <div class="param-label">
+          Eye Openness → Volume
+          <span class="val" id="v-vol">—</span>
+        </div>
+        <div class="param-track">
+          <div class="param-fill" id="f-vol" style="width:0%"></div>
+        </div>
+        <div class="param-note">Eyes closed → Mute</div>
+      </div>
+    </div>
+
+    <div id="waveform-bar"></div>
+
+    <div id="msg">Click "Start" to enable camera and load the AI model</div>
+
+    <div id="controls">
+      <button id="btn-start">Start Theremin</button>
+      <button id="btn-record">● Start Recording</button>
+      <button id="btn-play">▶ Play Recording</button>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+
+</html>
