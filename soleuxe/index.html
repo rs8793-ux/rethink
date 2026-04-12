@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#ece7df" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>SOLELUXE</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <button class="icon-btn" aria-label="Menu">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16" />
+        </svg>
+      </button>
+
+      <div class="brand">SOLELUXE</div>
+
+      <button class="icon-btn" aria-label="Bag">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M7 8V7a5 5 0 0 1 10 0v1M6 8h12l-1 11H7L6 8Z" />
+        </svg>
+      </button>
+    </header>
+
+    <main class="viewer-wrap">
+      <div class="scan-pill">
+        <span class="pill-dot"></span>
+        <span>LIVE FOOT SCANNING</span>
+      </div>
+
+      <div class="camera-stage">
+        <video id="camera" autoplay playsinline muted></video>
+        <canvas id="overlay"></canvas>
+
+        <div class="guide-frame" id="guideFrame">
+          <span class="guide-corner guide-corner--tl"></span>
+          <span class="guide-corner guide-corner--tr"></span>
+          <span class="guide-corner guide-corner--bl"></span>
+          <span class="guide-corner guide-corner--br"></span>
+        </div>
+
+        <button class="scan-button" id="scanButton" aria-label="Center scan">
+          <span></span>
+        </button>
+
+        <div class="status-text" id="statusText">Searching for white sneaker…</div>
+      </div>
+
+      <aside class="side-panel">
+        <div class="mode-icons">
+          <button class="mode-btn active" type="button" aria-label="Accessories">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 3l2.5 4.5L19 10l-4.5 2.5L12 17l-2.5-4.5L5 10l4.5-2.5L12 3Z"/>
+            </svg>
+          </button>
+
+          <button class="mode-btn" type="button" aria-label="Wheel">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="6"></circle>
+              <path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l2.8 2.8M16.2 16.2L19 19M19 5l-2.8 2.8M5 19l2.8-2.8"/>
+            </svg>
+          </button>
+
+          <button class="mode-btn" type="button" aria-label="Pattern">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 18L18 4M9 20l11-11M4 13L13 4"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="product-list" id="productList"></div>
+      </aside>
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn" aria-label="Home">
+        <svg viewBox="0 0 24 24">
+          <path d="M4 11.5L12 5l8 6.5V20h-5v-5H9v5H4v-8.5Z" />
+        </svg>
+      </button>
+
+      <button class="nav-btn active" aria-label="Add">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 8v8M8 12h8" />
+        </svg>
+      </button>
+
+      <button class="nav-btn" aria-label="Heart">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.4A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z" />
+        </svg>
+      </button>
+
+      <button class="nav-btn" aria-label="Profile">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm-7 8a7 7 0 0 1 14 0" />
+        </svg>
+      </button>
+    </nav>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
