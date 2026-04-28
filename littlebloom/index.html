@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Little Bloom · Where Childhood Memories Blossom</title>
+  <meta name="description"
+    content="Extract your child's drawing from any photo — AI removes obstructions, hands, and watermarks to reveal the pure artwork." />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lora:ital,wght@0,400;1,400&family=Caveat:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet" />
+</head>
+
+<body>
+
+  <!-- ========== CUSTOM CURSOR ========== -->
+  <div class="cursor" id="cursor" aria-hidden="true"></div>
+  <div class="cursor-trail" id="cursorTrail" aria-hidden="true"></div>
+
+  <!-- ========== FLOATING DECORATIONS ========== -->
+  <div class="float-deco" id="floatDeco" aria-hidden="true"></div>
+
+  <!-- ========== LANDING NAV (before login) ========== -->
+  <nav class="nav nav-landing" id="navLanding" role="navigation" aria-label="Landing navigation">
+    <a href="#" class="nav-logo" onclick="showLanding(); return false;" aria-label="Little Bloom Home">
+      <span class="logo-flower" aria-hidden="true">✿</span>
+      <span class="logo-text">Little Bloom</span>
+    </a>
+    <div class="nav-actions">
+      <button class="btn-ghost btn-sm" onclick="openLoginModal()">Log In</button>
+      <button class="nav-cta" onclick="openLoginModal()">Get Started</button>
+    </div>
+  </nav>
+
+  <!-- ========== APP NAV (after login) ========== -->
+  <nav class="nav nav-app" id="navApp" role="navigation" aria-label="App navigation" style="display:none">
+    <a href="#" class="nav-logo" onclick="navigateTo('dashboard'); return false;" aria-label="Little Bloom Home">
+      <span class="logo-flower" aria-hidden="true">✿</span>
+      <span class="logo-text">Little Bloom</span>
+    </a>
+
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#community" class="nav-link" data-page="community">Share</a></li>
+      <li><a href="#dashboard" class="nav-link active" data-page="dashboard">My Space</a></li>
+    </ul>
+
+    <div class="nav-actions">
+      <button class="nav-icon-btn" onclick="navigateTo('profile')" aria-label="Profile" title="Profile">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      </button>
+      <button class="nav-icon-btn" onclick="appLogout()" aria-label="Log out" title="Log out">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+      </button>
+    </div>
+
+    <button class="nav-hamburger" id="hamburger" aria-label="Toggle menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- ========== MOBILE BOTTOM NAV (app only) ========== -->
+  <nav class="mobile-nav" id="mobileNav" role="navigation" aria-label="Mobile navigation" style="display:none">
+    <button class="mobile-nav-item" data-page="community" onclick="navigateTo('community')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+      <span>Share</span>
+    </button>
+    <button class="mobile-nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      </svg>
+      <span>My Space</span>
+    </button>
+  </nav>
+
+  <!-- ========== MOBILE MENU OVERLAY ========== -->
+  <div class="mobile-menu-overlay" id="mobileMenu" aria-hidden="true">
+    <div class="mobile-menu-content">
+      <ul class="mobile-menu-links">
+        <li><a href="#" onclick="navigateTo('community'); return false;">Share</a></li>
+        <li><a href="#" onclick="navigateTo('dashboard'); return false;">My Space</a></li>
+        <li class="mobile-menu-divider"></li>
+        <li class="mobile-menu-group-label">Inside My Space</li>
+        <li><a href="#" onclick="navigateTo('story-chat'); return false;">Chat with Bloom</a></li>
+        <li><a href="#" onclick="navigateTo('memories'); return false;">Memory Book</a></li>
+        <li><a href="#" onclick="navigateTo('polish'); return false;">Polish Drawing</a></li>
+        <li><a href="#" onclick="navigateTo('gallery'); return false;">My Gallery</a></li>
+        <li class="mobile-menu-divider"></li>
+        <li><a href="#" onclick="navigateTo('profile'); return false;">Profile</a></li>
+      </ul>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════
+       LANDING PAGE (before login)
+       ══════════════════════════════════════════ -->
+  <section class="page page-landing active" id="page-landing">
+
+    <!-- Subtle shapes: must be inside #page-landing so they stack above the grid (::before) but below hero content -->
+    <div class="landing-float-deco landing-float-deco--root landing-float-deco--on" id="landingFloatDeco" aria-hidden="true">
+      <span class="landing-float-deco-item" style="--x:5%;--y:14%;--d:0s;--dur:22s;--op:0.13"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><circle cx="12" cy="12" r="2.2"/><path d="M12 5v2.5M12 16.5V19M5 12h2.5M16.5 12H19M7 7l1.8 1.8M15.2 15.2L17 17M7 17l1.8-1.8M15.2 8.8L17 7"/></svg></span>
+      <span class="landing-float-deco-item" style="--x:91%;--y:19%;--d:1.2s;--dur:19s;--op:0.12"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linejoin="round"><path d="M12 2l2.2 6.8h7l-5.6 4.2 2.1 6.8L12 15.8 6.3 19.8l2.1-6.8L2.8 8.8h7L12 2z"/></svg></span>
+      <span class="landing-float-deco-item" style="--x:76%;--y:11%;--d:2.4s;--dur:24s;--op:0.14"><svg width="12" height="12" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="currentColor"/></svg></span>
+      <span class="landing-float-deco-item" style="--x:3%;--y:52%;--d:0.8s;--dur:20s;--op:0.11"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="5"/></svg></span>
+      <span class="landing-float-deco-item" style="--x:87%;--y:46%;--d:3s;--dur:21s;--op:0.12"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><path d="M12 3v5M12 16v5M5 12h5M14 12h5"/></svg></span>
+      <span class="landing-float-deco-item" style="--x:8%;--y:68%;--d:1.6s;--dur:23s;--op:0.11"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><circle cx="12" cy="12" r="1.8"/><path d="M12 6v2M12 16v2M6 12h2M16 12h2"/></svg></span>
+      <span class="landing-float-deco-item" style="--x:72%;--y:62%;--d:2s;--dur:18s;--op:0.14"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M12 3l1.5 5h5l-4 3 1.5 5L12 14l-4 3 1.5-5-4-3h5L12 3z"/></svg></span>
+      <span class="landing-float-deco-item" style="--x:42%;--y:91%;--d:0.4s;--dur:25s;--op:0.11"><svg width="10" height="10" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg></span>
+      <span class="landing-float-deco-item" style="--x:96%;--y:34%;--d:2.8s;--dur:17s;--op:0.1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M12 4v3M12 17v3M7 12h3M14 12h3"/></svg></span>
+      <span class="landing-float-deco-item" style="--x:94%;--y:72%;--d:1s;--dur:22s;--op:0.12"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="4"/></svg></span>
+      <span class="landing-float-deco-item" style="--x:58%;--y:8%;--d:3.5s;--dur:20s;--op:0.11"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><circle cx="12" cy="12" r="1.6"/><path d="M12 7v1.8M12 15.2V17M7 12h1.8M15.2 12H17"/></svg></span>
+      <span class="landing-float-deco-item" style="--x:28%;--y:78%;--d:2.2s;--dur:26s;--op:0.13"><svg width="11" height="11" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.8" fill="currentColor"/></svg></span>
+      <span class="landing-float-deco-item" style="--x:18%;--y:42%;--d:0.2s;--dur:19s;--op:0.1"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linejoin="round"><path d="M12 4l1.8 5.5h5.7l-4.6 3.4L16.7 19 12 15.6 7.3 19l1.8-6.1-4.6-3.4h5.7L12 4z"/></svg></span>
+      <span class="landing-float-deco-item" style="--x:2%;--y:88%;--d:1.8s;--dur:21s;--op:0.12"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><path d="M12 5v4M12 15v4M8 12h4M12 12h4"/></svg></span>
+      <span class="landing-float-deco-item" style="--x:48%;--y:56%;--d:4s;--dur:23s;--op:0.1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><circle cx="12" cy="12" r="2"/><path d="M12 7v2M12 15v2M7 12h2M17 12h2"/></svg></span>
+      <span class="landing-float-deco-item" style="--x:82%;--y:88%;--d:2.6s;--dur:24s;--op:0.12"><svg width="11" height="11" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg></span>
+      <span class="landing-float-deco-item" style="--x:34%;--y:22%;--d:1.4s;--dur:18s;--op:0.11"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M12 3v4M12 17v4M8 12h8"/></svg></span>
+      <span class="landing-float-deco-item" style="--x:62%;--y:48%;--d:3.2s;--dur:21s;--op:0.1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="3.5"/></svg></span>
+      <span class="landing-float-deco-item" style="--x:22%;--y:88%;--d:0.6s;--dur:21s;--op:0.12"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><path d="M12 8c-2 0-3 2-2 4 1 2 3 2 4 0s0-4-2-4zm0 0v10M9 20c2-1 4-1 6 0"/></svg></span>
+      <span class="landing-float-deco-item" style="--x:68%;--y:38%;--d:2.1s;--dur:23s;--op:0.11"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><circle cx="12" cy="10" r="2.5"/><path d="M12 6v2M12 14v2M8 10h2M14 10h2M9.5 7.5l1.5 1.5M14.5 12.5 16 14M9.5 12.5 8 14M14.5 7.5 13 9"/></svg></span>
+      <span class="landing-float-deco-item" style="--x:14%;--y:24%;--d:1.1s;--dur:20s;--op:0.11"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.2 4h4l-3.2 2.4L15 13l-3-2.2L9 13l1-4.6L7 6h4L12 2z"/></svg></span>
+    </div>
+
+    <!-- S1: Hero -->
+    <div class="landing-hero">
+      <div class="blob blob-1" aria-hidden="true"></div>
+      <div class="blob blob-2" aria-hidden="true"></div>
+      <div class="blob blob-3" aria-hidden="true"></div>
+      <div class="landing-hero-doodles" aria-hidden="true">
+        <svg class="landing-doodle landing-doodle--leaf" width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><path d="M8 36c8-12 20-18 32-20-2 12-8 22-18 28M8 36c4-8 12-14 22-16"/></svg>
+        <svg class="landing-doodle landing-doodle--arc" width="120" height="60" viewBox="0 0 120 60" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="4 6" stroke-linecap="round"><path d="M10 50 Q60 5 110 45"/></svg>
+        <svg class="landing-doodle landing-doodle--ring" width="56" height="56" viewBox="0 0 56 56" fill="none" stroke="currentColor" stroke-width="1"><circle cx="28" cy="28" r="22"/></svg>
+      </div>
+      <div class="landing-hero-content">
+        <p class="hero-eyebrow">For parents who notice the little things</p>
+        <h1 class="hero-title">Every scribble<br /><em>tells a story.</em></h1>
+        <p class="hero-sub">A gentle place to save your child's drawings, funny quotes, and tiny moments — before they slip away.</p>
+        <div class="hero-actions">
+          <button class="btn-primary" onclick="openLoginModal()"><span class="landing-hero-btn-icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></span> Get Started</button>
+          <button class="btn-ghost" onclick="scrollToLandingSection('landing-features')">Explore Features →</button>
+        </div>
+      </div>
+      <div class="home-hero-cards" aria-hidden="true">
+        <div class="hero-card hero-polaroid floating-card hero-polaroid--tape card-float-1">
+          <span class="hero-polaroid-tape" aria-hidden="true"></span>
+          <div class="hero-polaroid-photo" style="background: var(--blush)">
+            <img src="landingpage/dinosaur.png" alt="child drawing dinosaur" width="160" height="120" decoding="async" />
+          </div>
+          <p class="hero-polaroid-label card-label caveat">Leo's dinosaur<br /><small>age 4</small></p>
+        </div>
+        <div class="hero-card hero-polaroid floating-card hero-polaroid--pin hero-polaroid--pin-blush card-float-2">
+          <span class="hero-polaroid-pin hero-polaroid-pin--center" aria-hidden="true"></span>
+          <div class="hero-polaroid-photo" style="background: var(--lavender)">
+            <img src="landingpage/star.png" alt="child drawing star" width="160" height="120" decoding="async" />
+          </div>
+          <p class="hero-polaroid-label card-label caveat">First day of school<br /><small>Sep 2024</small></p>
+        </div>
+        <div class="hero-card hero-polaroid floating-card hero-polaroid--pin hero-polaroid--pin-sage card-float-3">
+          <span class="hero-polaroid-pin hero-polaroid-pin--center" aria-hidden="true"></span>
+          <div class="hero-polaroid-photo" style="background: var(--sage-light)">
+            <img src="landingpage/flower.png" alt="child drawing flower" width="160" height="120" decoding="async" />
+          </div>
+          <p class="hero-polaroid-label card-label caveat">Spring picnic<br /><small>Apr 2024</small></p>
+        </div>
+      </div>
+      <button type="button" class="landing-scroll-hint" onclick="scrollToLandingSection('landing-how')" aria-label="Scroll to explore">
+        <span class="landing-scroll-hint-mouse" aria-hidden="true"><svg width="22" height="34" viewBox="0 0 22 34" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1" y="1" width="20" height="32" rx="10"/><path d="M11 8v6" stroke-linecap="round"/></svg></span>
+        <span class="landing-scroll-hint-text">Scroll to explore</span>
+        <span class="landing-scroll-hint-chevron" aria-hidden="true"><svg width="16" height="10" viewBox="0 0 16 10" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l6 6 6-6"/></svg></span>
+      </button>
+    </div>
+
+    <!-- S2: Two Feature Groups -->
+    <div class="landing-section" id="landing-how">
+      <div class="section-header">
+        <p class="section-eyebrow">What Little Bloom Does</p>
+        <h2 class="section-title">Capture stories, preserve creativity</h2>
+        <p class="section-desc" style="max-width:520px;margin:0 auto">Two connected experiences — one for the moments you want to remember, one for the art you want to keep.</p>
+      </div>
+
+      <div class="feature-groups">
+        <!-- Group 1: Stories -->
+        <div class="feature-group-card">
+          <div class="feature-group-label caveat">Stories &amp; Memories</div>
+          <div class="feature-group-pair">
+            <div class="feature-group-item">
+              <div class="feature-group-icon" aria-hidden="true"><svg class="landing-stroke-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
+              <h3>AI Chatbot</h3>
+              <p>Talk naturally with Bloom about your child — a funny thing they said, a hard day, a quiet moment. No prompts, no forms. Just conversation.</p>
+            </div>
+            <div class="feature-group-connector" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M12 5v14M5 12h14"/></svg>
+            </div>
+            <div class="feature-group-item">
+              <div class="feature-group-icon" aria-hidden="true"><svg class="landing-stroke-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h6"/></svg></div>
+              <h3>Memory Book</h3>
+              <p>Meaningful moments from your conversations are gently saved as diary-style entries — a growing notebook of your child's life.</p>
+            </div>
+          </div>
+          <p class="feature-group-connection">Talk naturally with Bloom, and meaningful moments gently become part of your child's memory book.</p>
+        </div>
+
+        <!-- Group 2: Art -->
+        <div class="feature-group-card">
+          <div class="feature-group-label caveat">Art &amp; Creativity</div>
+          <div class="feature-group-pair">
+            <div class="feature-group-item">
+              <div class="feature-group-icon" aria-hidden="true"><svg class="landing-stroke-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg></div>
+              <h3>Polish Art</h3>
+              <p>Upload a photo of your child's drawing. AI cleans it up — removes obstructions, enhances colors — while keeping every line they drew.</p>
+            </div>
+            <div class="feature-group-connector" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M12 5v14M5 12h14"/></svg>
+            </div>
+            <div class="feature-group-item">
+              <div class="feature-group-icon" aria-hidden="true"><svg class="landing-stroke-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
+              <h3>Gallery &amp; Share</h3>
+              <p>Collect polished artwork in a gallery. Share selected pieces with family or the community — celebrate your child's creativity.</p>
+            </div>
+          </div>
+          <p class="feature-group-connection">Transform your child's drawings, collect them in a gallery, and share the moments you want to celebrate.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- S3: Features -->
+    <div class="landing-section landing-features-section" id="landing-features">
+      <div class="section-header">
+        <p class="section-eyebrow">Features</p>
+        <h2 class="section-title">Everything you need to remember</h2>
+      </div>
+      <div class="landing-features-grid">
+        <div class="landing-feature-card">
+          <div class="landing-feature-icon" aria-hidden="true"><svg class="landing-stroke-icon landing-stroke-icon--lg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
+          <h3>Story Chat</h3>
+          <p>Talk to Bloom, a gentle AI companion who listens and helps you capture what matters.</p>
+        </div>
+        <div class="landing-feature-card">
+          <div class="landing-feature-icon" aria-hidden="true"><svg class="landing-stroke-icon landing-stroke-icon--lg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h6"/></svg></div>
+          <h3>Memory Book</h3>
+          <p>A beautiful digital notebook where every little moment becomes a diary page.</p>
+        </div>
+        <div class="landing-feature-card">
+          <div class="landing-feature-icon" aria-hidden="true"><svg class="landing-stroke-icon landing-stroke-icon--lg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg></div>
+          <h3>Drawing Polish</h3>
+          <p>Upload a photo of any drawing — AI removes obstructions and extracts the pure artwork.</p>
+        </div>
+        <div class="landing-feature-card">
+          <div class="landing-feature-icon" aria-hidden="true"><svg class="landing-stroke-icon landing-stroke-icon--lg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
+          <h3>Family Gallery</h3>
+          <p>A growing collection of your child's art, polished drawings, and saved stories.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- S4: Preview -->
+    <div class="landing-section landing-preview-section">
+      <div class="section-header">
+        <p class="section-eyebrow">Preview</p>
+        <h2 class="section-title">A glimpse inside the memory book</h2>
+      </div>
+      <div class="landing-preview-grid">
+        <div class="landing-preview-card">
+          <div class="landing-preview-paper">
+            <p class="landing-preview-date caveat">Sep 15, 2024</p>
+            <h4 class="landing-preview-title caveat">First Day at Kindergarten</h4>
+            <p class="landing-preview-body">She walked in without tears — braver than anyone could have imagined. She found her cubby, waved at us through the window. We were the ones crying.</p>
+          </div>
+        </div>
+        <div class="landing-preview-card">
+          <div class="landing-preview-paper">
+            <p class="landing-preview-date caveat">Jan 8, 2024</p>
+            <h4 class="landing-preview-title caveat">"More Cookies, Please"</h4>
+            <p class="landing-preview-body">Her first complete sentence, spoken at breakfast with absolute confidence. We laughed until our coffee went cold.</p>
+          </div>
+        </div>
+        <div class="landing-preview-card">
+          <div class="landing-preview-paper">
+            <p class="landing-preview-date caveat">Jul 12, 2024</p>
+            <h4 class="landing-preview-title caveat">The Unicorn Wish</h4>
+            <p class="landing-preview-body">Five candles, one big breath. She wished for a dog, a brother, and a unicorn. "But the unicorn can be small," she added.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Art Gallery Preview -->
+      <div class="section-header" style="margin-top:3rem">
+        <p class="section-eyebrow">Art Gallery</p>
+        <h2 class="section-title">Their little masterpieces, preserved</h2>
+      </div>
+      <div class="landing-gallery-grid">
+        <div class="landing-gallery-item">
+          <div class="landing-gallery-frame">
+            <img src="exampleimages/cat.png" alt="Child's drawing of a cat" />
+          </div>
+          <p class="landing-gallery-label caveat">Mr. Whiskers <span>age 4</span></p>
+        </div>
+        <div class="landing-gallery-item">
+          <div class="landing-gallery-frame">
+            <img src="exampleimages/lion.png" alt="Child's drawing of a lion" />
+          </div>
+          <p class="landing-gallery-label caveat">The Brave Lion <span>age 5</span></p>
+        </div>
+        <div class="landing-gallery-item">
+          <div class="landing-gallery-frame">
+            <img src="exampleimages/birthday.png" alt="Child's birthday drawing" />
+          </div>
+          <p class="landing-gallery-label caveat">Birthday Party <span>age 3</span></p>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       LOGIN MODAL
+       ══════════════════════════════════════════ -->
+  <div class="login-overlay" id="loginOverlay" style="display:none">
+    <div class="login-modal">
+      <button class="share-modal-close" onclick="closeLoginModal()" aria-label="Close">&times;</button>
+      <div class="login-logo">
+        <span class="logo-flower" aria-hidden="true">✿</span>
+        <span class="logo-text">Little Bloom</span>
+      </div>
+      <h3 class="login-title caveat">Welcome</h3>
+      <p class="login-subtitle">Sign in to start your child's memory book.</p>
+
+      <button class="login-google-btn" onclick="appLogin()">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Continue with Google
+      </button>
+
+      <div class="login-divider"><span>or</span></div>
+
+      <div class="login-form">
+        <input type="email" class="login-input" id="loginEmail" placeholder="Email address" />
+        <input type="password" class="login-input" id="loginPassword" placeholder="Password" />
+
+        <div class="login-divider"><span>about your child</span></div>
+
+        <div class="login-children" id="loginChildren">
+          <div class="login-child-row">
+            <input type="text" class="login-input" placeholder="Child's name (e.g. Luna)" maxlength="30" data-field="name" />
+            <input type="date" class="login-input" data-field="birthday" />
+          </div>
+        </div>
+        <button type="button" class="login-add-child" onclick="addLoginChild()">+ Add another child</button>
+
+        <button class="btn-primary" style="width:100%;margin-top:0.6rem" onclick="appLogin()">Get Started</button>
+      </div>
+      <p class="login-footer-text">Already have an account? <a href="#" onclick="appLogin(); return false;">Sign in</a></p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       APP DASHBOARD (after login)
+       ══════════════════════════════════════════ -->
+  <section class="page page-dashboard" id="page-dashboard">
+
+    <!-- Greeting -->
+    <div class="dash-greeting">
+      <div class="blob blob-1" aria-hidden="true"></div>
+      <div class="blob blob-2" aria-hidden="true"></div>
+      <p class="dash-eyebrow">My Space</p>
+      <h1 class="dash-title" id="dashboardGreeting">Good to see you.</h1>
+      <p class="dash-sub">What would you like to create or remember today?</p>
+    </div>
+
+    <!-- Section 1: Two Feature Groups -->
+    <div class="dash-groups">
+
+      <!-- GROUP 1: Story & Memory -->
+      <div class="dash-group-card dash-group-story">
+        <div class="dash-group-header">
+          <span class="dash-group-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+          <h2 class="dash-group-title">Story &amp; Memory</h2>
+        </div>
+        <p class="dash-group-desc">Talk naturally and your child's moments become a growing diary.</p>
+
+        <div class="dash-group-actions">
+          <button class="dash-action" onclick="navigateTo('story-chat')">
+            <span class="dash-action-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c0-6-4-10-8-10"/><path d="M12 22c0-6 4-10 8-10"/><path d="M12 22V12"/><path d="M12 12c0-3 2-6 4-8s4-3 4-3-1 3-3 5-3 4-5 6"/><path d="M12 12c0-3-2-6-4-8S4 1 4 1s1 3 3 5 3 4 5 6"/></svg></span>
+            <div>
+              <h3>Chat with Bloom</h3>
+              <p>Share stories, funny quotes, and little moments</p>
+            </div>
+            <span class="dash-action-arrow">→</span>
+          </button>
+          <button class="dash-action" onclick="navigateTo('memories')">
+            <span class="dash-action-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h6"/></svg></span>
+            <div>
+              <h3>Memory Book</h3>
+              <p>Read, write, or relive your child's diary</p>
+            </div>
+            <span class="dash-action-arrow">→</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- GROUP 2: Art & Creation -->
+      <div class="dash-group-card dash-group-art">
+        <div class="dash-group-header">
+          <span class="dash-group-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><path d="M17.5 12c1.38 0 2.5-1.12 2.5-2.5S18.88 7 17.5 7 15 8.12 15 9.5s1.12 2.5 2.5 2.5z"/><path d="M3 21l8-8"/><path d="M12 3L3 21l8-8 9-10-8 8z"/></svg></span>
+          <h2 class="dash-group-title">Art &amp; Creation</h2>
+        </div>
+        <p class="dash-group-desc">Transform drawings and build a collection of your child's artwork.</p>
+
+        <div class="dash-group-actions">
+          <button class="dash-action" onclick="navigateTo('polish')">
+            <span class="dash-action-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="3.5" opacity="0.4"/></svg></span>
+            <div>
+              <h3>Polish Drawing</h3>
+              <p>Remove obstructions &amp; watermarks — reveal the art</p>
+            </div>
+            <span class="dash-action-arrow">→</span>
+          </button>
+          <button class="dash-action" onclick="navigateTo('gallery')">
+            <span class="dash-action-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10.5" r="1.5"/><path d="M21 17l-5-5-4 4-3-3-4 4"/></svg></span>
+            <div>
+              <h3>My Gallery</h3>
+              <p>Browse your growing collection of polished artwork</p>
+            </div>
+            <span class="dash-action-arrow">→</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Section 2: Your Content -->
+    <div class="dash-content-section">
+      <div class="dash-content-header-top">
+        <h2>Your Content</h2>
+      </div>
+      <div class="dash-content-row">
+        <div class="dash-content-col">
+          <div class="dash-content-header">
+            <h3>Recent Memories</h3>
+            <a href="#" onclick="navigateTo('memories'); return false;" class="dash-see-all">See all →</a>
+          </div>
+          <div class="dash-memories-list" id="dashMemories">
+            <div class="dash-empty-hint">
+              <span class="dash-empty-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon app-icon--muted" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+              <p>No memories yet. <a href="#" onclick="navigateTo('story-chat'); return false;">Chat with Bloom</a> to start collecting moments.</p>
+            </div>
+          </div>
+        </div>
+        <div class="dash-content-col">
+          <div class="dash-content-header">
+            <h3>Recent Artwork</h3>
+            <a href="#" onclick="navigateTo('gallery'); return false;" class="dash-see-all">See all →</a>
+          </div>
+          <div class="dash-gallery-grid" id="dashGallery">
+            <div class="dash-empty-hint">
+              <span class="dash-empty-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon app-icon--muted" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><path d="M17.5 12c1.38 0 2.5-1.12 2.5-2.5S18.88 7 17.5 7 15 8.12 15 9.5s1.12 2.5 2.5 2.5z"/><path d="M3 21l8-8"/><path d="M12 3L3 21l8-8 9-10-8 8z"/></svg></span>
+              <p>No artwork yet. <a href="#" onclick="navigateTo('polish'); return false;">Polish a drawing</a> to get started.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+
+
+
+  <!-- ══════════════════════════════════════════
+     PAGE: CREATE > POLISH DRAWING
+     ══════════════════════════════════════════ -->
+  <section class="page page-polish" id="page-polish">
+    <div class="page-container">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="#" onclick="navigateTo('dashboard'); return false;">My Space</a>
+        <span aria-hidden="true">›</span>
+        <span class="breadcrumb-current">Polish Drawing</span>
+      </nav>
+
+      <!-- Step Indicator -->
+      <div class="step-indicator" role="progressbar" aria-valuenow="1" aria-valuemin="1" aria-valuemax="3">
+        <div class="step-dot active" data-step="1"><span>1</span> Upload</div>
+        <div class="step-line">
+          <div class="step-line-fill" id="polishStepLine1"></div>
+        </div>
+        <div class="step-dot" data-step="2"><span>2</span> Choose Mode</div>
+        <div class="step-line">
+          <div class="step-line-fill" id="polishStepLine2"></div>
+        </div>
+        <div class="step-dot" data-step="3"><span>3</span> Generate</div>
+      </div>
+
+      <!-- Step 1: Upload Drawing -->
+      <div class="wizard-step active" id="polish-step-1">
+        <div class="wizard-step-header">
+          <h2>Upload a Photo of the Drawing</h2>
+          <p>Even if someone is standing in front or there's a watermark — we'll extract the drawing.</p>
+        </div>
+        <div class="upload-zone" id="polishDropzone" role="button" tabindex="0" aria-label="Upload drawing area">
+          <div class="upload-zone-inner" id="polishUploadInner">
+            <div class="upload-zone-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon app-icon--sage" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg></div>
+            <p class="upload-zone-title caveat">Drop a photo of the drawing here</p>
+            <p class="upload-zone-hint">or click to browse · JPG, PNG up to 10MB</p>
+            <input type="file" id="polishFileInput" accept="image/*" hidden aria-label="Choose drawing" />
+            <button class="btn-upload" onclick="document.getElementById('polishFileInput').click()">Choose
+              Drawing</button>
+          </div>
+        </div>
+        <div class="upload-previews" id="polishPreview"></div>
+        <div class="wizard-step-actions">
+          <div></div>
+          <button class="btn-primary" id="polishNextStep1" onclick="polishGoStep(2)" disabled>
+            Next: Choose Mode →
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: Choose Mode -->
+      <div class="wizard-step" id="polish-step-2">
+        <div class="wizard-step-header">
+          <h2>Choose an Extraction Mode</h2>
+          <p>AI removes obstructions &amp; watermarks, then extracts the pure drawing. No re-creation.</p>
+        </div>
+        <div class="polish-modes-grid">
+          <label class="polish-mode-card active">
+            <input type="radio" name="polishMode" value="clean" checked />
+            <div class="mode-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3"/><circle cx="12" cy="12" r="3" opacity="0.35"/></svg></div>
+            <div>
+              <strong>Clean Extract</strong>
+              <p>Remove people, hands, and watermarks blocking the drawing — reveal the full artwork on clean white
+                paper</p>
+            </div>
+          </label>
+          <label class="polish-mode-card">
+            <input type="radio" name="polishMode" value="brighten" />
+            <div class="mode-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17a9 9 0 0 1 18 0"/><path d="M6 17a6 6 0 0 1 12 0"/><path d="M9 17a3 3 0 0 1 6 0"/></svg></div>
+            <div>
+              <strong>Extract & Brighten</strong>
+              <p>Remove obstructions + boost faded colors to vivid — same drawing, just cleaner and more colorful</p>
+            </div>
+          </label>
+          <label class="polish-mode-card">
+            <input type="radio" name="polishMode" value="frame" />
+            <div class="mode-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="1"/><rect x="4" y="6" width="16" height="12" rx="0.5"/></svg></div>
+            <div>
+              <strong>Frame It</strong>
+              <p>Add a beautiful picture frame around your photo — the image stays 100% untouched</p>
+            </div>
+          </label>
+          <label class="polish-mode-card">
+            <input type="radio" name="polishMode" value="print" />
+            <div class="mode-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg></div>
+            <div>
+              <strong>Extract for Print</strong>
+              <p>Remove obstructions + watermarks + optimize for printing — ready for a mug, t-shirt, or sticker</p>
+            </div>
+          </label>
+        </div>
+
+        <div class="polish-note">
+          <span class="polish-note-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span> AI only removes obstructions and watermarks — the drawing itself stays
+          exactly as your child created it.
+        </div>
+
+        <div class="wizard-step-actions">
+          <button class="btn-ghost" onclick="polishGoStep(1)">← Back</button>
+          <button class="btn-primary" onclick="polishGoStep(3)">Next: Generate →</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Generate & Result -->
+      <div class="wizard-step" id="polish-step-3">
+        <div id="polishPreGenerate">
+          <div class="wizard-step-header">
+            <h2>Ready to Extract</h2>
+            <p>AI removes obstructions &amp; watermarks to extract the pure drawing.</p>
+          </div>
+          <div class="generate-action">
+            <button class="btn-generate" id="polishGenerateBtn" onclick="generatePolish()">
+              <span class="btn-generate-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3"/></svg></span>
+              Extract Drawing
+            </button>
+          </div>
+        </div>
+
+        <div id="polishProgress" style="display:none">
+          <div class="generation-progress">
+              <div class="progress-animation" aria-hidden="true">
+              <div class="progress-book app-icon-wrap"><svg class="app-icon progress-book-svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8"/></svg></div>
+            </div>
+            <h3 class="progress-title caveat">Extracting the artwork...</h3>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar" id="polishProgressBar" role="progressbar" aria-valuenow="0" aria-valuemin="0"
+                aria-valuemax="100">
+                <div class="progress-bar-fill"></div>
+              </div>
+            </div>
+            <p class="progress-status" id="polishProgressStatus">Analyzing the photo...</p>
+          </div>
+        </div>
+
+        <div id="polishResult" style="display:none">
+          <div class="wizard-step-header">
+            <p class="result-badge caveat" aria-hidden="true">Drawing Extracted</p>
+            <h2>Original → Extracted</h2>
+          </div>
+          <div class="polish-comparison">
+            <div class="comparison-side">
+              <h4 class="comparison-label caveat">Original</h4>
+              <div class="comparison-img" id="polishOriginalImg">
+                <div class="comparison-placeholder comparison-placeholder--svg" aria-hidden="true"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg></div>
+              </div>
+            </div>
+            <div class="comparison-divider" aria-hidden="true">
+              <span>→</span>
+            </div>
+            <div class="comparison-side">
+              <h4 class="comparison-label caveat">Polished</h4>
+              <div class="comparison-img" id="polishResultImg">
+                <div class="comparison-placeholder comparison-placeholder--svg" aria-hidden="true"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><path d="M17.5 12c1.38 0 2.5-1.12 2.5-2.5S18.88 7 17.5 7 15 8.12 15 9.5s1.12 2.5 2.5 2.5z"/><path d="M3 21l8-8"/><path d="M12 3L3 21l8-8 9-10-8 8z"/></svg></div>
+              </div>
+            </div>
+          </div>
+          <div class="polish-result-text" id="polishResultText"></div>
+          <div class="result-actions">
+            <button class="btn-primary" onclick="savePolishToGallery()">
+              <span class="btn-inline-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10.5" r="1.5"/><path d="M21 17l-5-5-4 4-3-3-4 4"/></svg></span> Share to My Gallery
+            </button>
+            <button class="btn-ghost" onclick="reGeneratePolish()">
+              <span class="btn-inline-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></span> Re-generate
+            </button>
+            <button class="btn-ghost" onclick="polishGoStep(2)">
+              ← Try Different Mode
+            </button>
+            <button class="btn-ghost" onclick="polishNewDrawing()">
+              ← New Drawing
+            </button>
+          </div>
+          <div class="polish-gallery-success" id="polishGallerySuccess" style="display:none" role="status">
+            <p class="polish-gallery-success-text">Your drawing is in your personal gallery.</p>
+            <button type="button" class="btn-primary polish-gallery-success-btn" onclick="goToMyGalleryFromPolish()">
+              Go to My Gallery →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save to Gallery Modal -->
+    <div class="save-gallery-modal-overlay" id="saveGalleryModal" style="display:none">
+      <div class="save-gallery-modal">
+        <button class="share-modal-close" onclick="closeSaveGalleryModal()" aria-label="Close">&times;</button>
+        <h3 class="share-modal-title caveat">Share to My Gallery</h3>
+        <div class="save-gallery-form">
+          <label class="share-form-label">Drawing title
+            <input type="text" id="saveGalleryTitle" class="share-select" placeholder="e.g. Ocean Adventure"
+              maxlength="50" />
+          </label>
+          <label class="share-form-label">Child's age when drawn
+            <select id="saveGalleryAge" class="share-select">
+              <option value="">Select age (optional)</option>
+              <option value="Under 2">Under 2</option>
+              <option value="2">2 years old</option>
+              <option value="3">3 years old</option>
+              <option value="4">4 years old</option>
+              <option value="5">5 years old</option>
+              <option value="6">6 years old</option>
+              <option value="7">7 years old</option>
+              <option value="8">8 years old</option>
+              <option value="9">9 years old</option>
+              <option value="10+">10+ years old</option>
+            </select>
+          </label>
+          <label class="share-form-label">Drawn on
+            <select id="saveGallerySurface" class="share-select">
+              <option value="">Where was it drawn? (optional)</option>
+              <option value="Paper">Paper</option>
+              <option value="Wall">Wall</option>
+              <option value="Floor">Floor</option>
+              <option value="Whiteboard">Whiteboard</option>
+              <option value="Chalkboard">Chalkboard</option>
+              <option value="iPad">iPad / Tablet</option>
+              <option value="Canvas">Canvas</option>
+              <option value="Cardboard">Cardboard</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+        </div>
+        <div class="share-actions" style="margin-top:1.2rem">
+          <button class="btn-ghost" onclick="closeSaveGalleryModal()">Cancel</button>
+          <button class="btn-primary" onclick="confirmSaveToGallery()">Add to My Gallery</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+     PAGE: CREATE > BUILD GROWTH TIMELINE
+     ══════════════════════════════════════════ -->
+
+
+  <!-- ══════════════════════════════════════════
+     PAGE: STORY CHAT
+     ══════════════════════════════════════════ -->
+  <section class="page page-story-chat" id="page-story-chat">
+    <div class="page-container page-story-chat-wrap">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="#" onclick="navigateTo('dashboard'); return false;">My Space</a>
+        <span aria-hidden="true">›</span>
+        <span class="breadcrumb-current">Story Chat</span>
+      </nav>
+
+      <div class="story-chat-layout">
+      <div class="chat-container" id="chatContainer">
+        <!-- Chat header -->
+        <div class="chat-header">
+          <div class="chat-header-avatar app-icon-wrap" aria-hidden="true"><svg class="app-icon chat-avatar-flower" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8c-2 2-2 5 0 7 2-2 5-2 7 0 2-2 2-5 0-7-2 2-5 2-7 0z"/><circle cx="12" cy="11.5" r="1.8" fill="currentColor" stroke="none"/><path d="M12 14v5"/></svg></div>
+          <div>
+            <h2 class="chat-header-title caveat">Bloom</h2>
+            <p class="chat-header-sub">here to listen</p>
+          </div>
+          <button class="btn-ghost btn-sm" onclick="resetStoryChat()" style="margin-left:auto">New Chat</button>
+        </div>
+
+        <!-- Chat messages -->
+        <div class="chat-messages" id="chatMessages">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Suggested prompts (shown at start) -->
+        <div class="chat-suggestions" id="chatSuggestions">
+          <p class="chat-suggestions-label">You can start anywhere. Here are some ideas:</p>
+          <div class="chat-suggestions-grid">
+            <button class="chat-suggestion-chip" onclick="sendSuggestion(this)">My kid said the funniest thing
+              today</button>
+            <button class="chat-suggestion-chip" onclick="sendSuggestion(this)">I had kind of a hard day</button>
+            <button class="chat-suggestion-chip" onclick="sendSuggestion(this)">There's this tiny moment I keep thinking
+              about</button>
+            <button class="chat-suggestion-chip" onclick="sendSuggestion(this)">Can I just vent for a second?</button>
+            <button class="chat-suggestion-chip" onclick="sendSuggestion(this)">I want to talk about who my child is
+              becoming</button>
+          </div>
+        </div>
+
+        <!-- Chat input -->
+        <div class="chat-input-bar">
+          <textarea class="chat-input" id="chatInput" placeholder="Say whatever's on your mind..." rows="1"
+            maxlength="1000"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage();}"></textarea>
+          <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()" aria-label="Send">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <aside class="voice-chat-panel" aria-labelledby="voiceChatTitle">
+        <div class="voice-chat-panel-inner">
+          <div class="voice-chat-icon-wrap" aria-hidden="true">
+            <svg class="voice-chat-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3z"/><path d="M19 11a7 7 0 0 1-14 0"/><path d="M12 18v3"/></svg>
+          </div>
+          <h3 id="voiceChatTitle" class="voice-chat-title caveat">Voice Chat with Bloom</h3>
+          <p class="voice-chat-desc">Talk out loud and let Bloom gently remember the important moments.</p>
+          <p class="voice-chat-status" id="voiceChatStatus" aria-live="polite">When you are ready, start a gentle voice visit. Your words still appear in this chat.</p>
+          <div class="voice-chat-actions">
+            <button type="button" class="btn-voice btn-voice-primary" id="voiceStartBtn" onclick="startVoiceChat()">
+              <span class="btn-voice-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg></span>
+              Start Voice Chat
+            </button>
+            <button type="button" class="btn-voice btn-voice-secondary" id="voicePauseBtn" onclick="toggleVoicePause()" disabled>
+              <span class="btn-voice-icon voice-pause-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="15" y="5" width="4" height="14" rx="1"/></svg></span>
+              <span class="btn-voice-icon voice-resume-icon" aria-hidden="true" style="display:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><polygon points="8 5 19 12 8 19 8 5"/></svg></span>
+              <span class="voice-pause-label">Pause</span>
+            </button>
+            <button type="button" class="btn-voice btn-voice-secondary" id="voiceEndBtn" onclick="stopVoiceChat()" disabled>
+              <span class="btn-voice-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3h4a2 2 0 0 1 2 2v4l4 3v2H4v-2l4-3V5a2 2 0 0 1 2-2z"/><path d="M9 18v3h6v-3"/></svg></span>
+              End Call
+            </button>
+          </div>
+        </div>
+      </aside>
+      </div>
+
+      <!-- Story result panel (hidden until story is generated) -->
+      <div class="chat-story-result" id="chatStoryResult" style="display:none">
+        <div class="chat-story-card">
+          <div class="chat-story-badge caveat">Your Story</div>
+          <h3 class="chat-story-title" id="chatStoryTitle"></h3>
+          <div class="chat-story-tags" id="chatStoryTags"></div>
+          <p class="chat-story-summary" id="chatStorySummary"></p>
+          <div class="chat-story-body" id="chatStoryBody"></div>
+        </div>
+        <div class="chat-story-actions">
+          <button class="btn-primary" onclick="saveChatToMemory()">
+            <span class="btn-inline-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span> Save to Memory Book
+          </button>
+          <button class="btn-ghost" onclick="saveChatToGallery()">
+            <span class="btn-inline-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10.5" r="1.5"/><path d="M21 17l-5-5-4 4-3-3-4 4"/></svg></span> Save to Gallery
+          </button>
+          <button class="btn-ghost" onclick="regenerateChatStory()">
+            <span class="btn-inline-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></span> Rewrite
+          </button>
+          <button class="btn-ghost" onclick="closeChatStory()">
+            ← Back to Chat
+          </button>
+        </div>
+      </div>
+
+      <div class="story-chat-memory-shortcut">
+        <button type="button" class="btn-ghost story-chat-memory-btn" onclick="navigateTo('memories')">
+          <span class="btn-inline-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+          Open Memory Book
+        </button>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+     PAGE: GALLERY
+     ══════════════════════════════════════════ -->
+  <section class="page page-gallery" id="page-gallery">
+    <div class="page-container">
+      <div class="section-header">
+        <p class="section-eyebrow">Gallery</p>
+        <h2 class="section-title">A museum of growing creativity</h2>
+      </div>
+
+      <div class="gallery-toolbar">
+        <div class="gallery-filters">
+          <button class="chip active" data-filter="all" onclick="filterGallery('all')">All</button>
+          <button class="chip" data-filter="Paper" onclick="filterGallery('Paper')">Paper</button>
+          <button class="chip" data-filter="Wall" onclick="filterGallery('Wall')">Wall</button>
+          <button class="chip" data-filter="iPad" onclick="filterGallery('iPad')">iPad</button>
+          <button class="chip" data-filter="drawing" onclick="filterGallery('drawing')">Drawings</button>
+          <button class="chip" data-filter="first" onclick="filterGallery('first')">Firsts</button>
+        </div>
+        <div class="gallery-view-toggle">
+          <button class="view-btn active" id="viewGrid" onclick="setView('grid')" aria-label="Grid view">⊞ Grid</button>
+          <button class="view-btn" id="viewFloat" onclick="setView('float')" aria-label="Dream view"><span class="btn-inline-icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"><path d="M12 2l2.2 6.8h7l-5.6 4.2 2.1 6.8L12 15.8 6.3 19.8l2.1-6.8L2.8 8.8h7L12 2z"/></svg></span> Dream</button>
+        </div>
+      </div>
+
+      <div class="gallery-grid" id="galleryGrid">
+        <!-- Populated by JS -->
+      </div>
+
+        <div class="empty-state" id="galleryEmpty" style="display:none">
+        <div class="empty-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon app-icon--muted" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10.5" r="1.5"/><path d="M21 17l-5-5-4 4-3-3-4 4"/></svg></div>
+        <h3>Your gallery is waiting</h3>
+        <p>Polish a drawing to see it here.</p>
+        <button class="btn-primary" onclick="navigateTo('polish')">
+          <span class="btn-inline-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1"/></svg></span> Polish a Drawing
+        </button>
+      </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Gallery item detail">
+      <div class="lightbox-backdrop" onclick="closeLightbox()"></div>
+      <div class="lightbox-inner">
+        <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close">✕</button>
+        <div class="lightbox-img-wrap" id="lightboxImg"></div>
+        <div class="lightbox-info">
+          <h3 class="lightbox-title caveat" id="lightboxTitle"></h3>
+          <p class="lightbox-story" id="lightboxStory"></p>
+          <div class="lightbox-meta" id="lightboxMeta"></div>
+          <button class="btn-ghost btn-sm" id="lightboxShareBtn" style="margin-top:0.8rem"
+            onclick="shareFromLightbox()">
+            <span class="btn-inline-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"><path d="M12 2l2.2 6.8h7l-5.6 4.2 2.1 6.8L12 15.8 6.3 19.8l2.1-6.8L2.8 8.8h7L12 2z"/></svg></span> Share to Community
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+     PAGE: MEMORIES (Notebook)
+     ══════════════════════════════════════════ -->
+  <section class="page page-memories" id="page-memories">
+    <div class="page-container">
+      <!-- Top bar -->
+      <div class="nb-topbar">
+        <h2 class="nb-topbar-title caveat">Memory Book</h2>
+        <div class="nb-topbar-actions">
+          <button class="btn-primary btn-sm" onclick="openNewMemoryModal()"><span class="btn-inline-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span> New
+            Memory</button>
+          <button class="btn-ghost btn-sm" onclick="navigateTo('story-chat')"><span class="btn-inline-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span> Open
+            Chat</button>
+        </div>
+      </div>
+
+      <!-- Book -->
+      <div class="nb-book" id="nbBook">
+        <div class="nb-binding" aria-hidden="true"></div>
+
+        <!-- Left page: memory list -->
+        <div class="nb-page nb-page-left" id="nbPageLeft">
+          <div class="nb-page-inner" id="nbListPage">
+            <!-- Populated by JS -->
+          </div>
+          <div class="nb-page-footer">
+            <button class="nb-flip-btn" onclick="flipMemoryPage(-1)" id="nbPrevBtn">← Prev</button>
+            <span class="nb-page-num caveat" id="nbPageNum">Page 1</span>
+            <button class="nb-flip-btn" onclick="flipMemoryPage(1)" id="nbNextBtn">Next →</button>
+          </div>
+        </div>
+
+        <!-- Right page: active entry -->
+        <div class="nb-page nb-page-right" id="nbPageRight">
+          <div class="nb-page-inner nb-detail" id="nbDetailPage">
+            <div class="nb-detail-empty" id="nbDetailEmpty">
+              <div class="nb-detail-empty-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon app-icon--muted" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8"/></svg></div>
+              <p class="caveat" style="font-size:1.3rem;color:var(--text-light)">Select a memory to read</p>
+              <p style="font-size:0.82rem;color:var(--text-light)">Click an entry on the left page</p>
+            </div>
+            <div id="nbDetailContent" style="display:none">
+              <div class="nb-detail-date caveat" id="nbDate"></div>
+              <h2 class="nb-detail-title caveat" id="nbTitle"></h2>
+              <div class="nb-detail-tags" id="nbTags"></div>
+              <div class="nb-detail-photo" id="nbPhoto"></div>
+              <div class="nb-detail-body" id="nbBody"></div>
+              <div class="nb-detail-source" id="nbSource"></div>
+              <div class="nb-detail-actions">
+                <button class="nb-action-btn" onclick="addImageToMemory()"><span class="nb-action-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10.5" r="1.5"/><path d="M21 17l-5-5-4 4-3-3-4 4"/></svg></span> Add Photo</button>
+                <button class="nb-action-btn" onclick="deleteCurrentMemory()"><span class="nb-action-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></span> Delete</button>
+                <button class="nb-action-btn" onclick="turnMemoryToStory()"><span class="nb-action-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span> Turn into Story</button>
+              </div>
+            </div>
+          </div>
+          <!-- Decorative doodles -->
+          <div class="nb-doodle nb-doodle-1" aria-hidden="true"></div>
+          <div class="nb-doodle nb-doodle-2" aria-hidden="true"></div>
+          <div class="nb-doodle nb-doodle-3" aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div class="nb-empty" id="memoriesEmpty" style="display:none">
+        <div class="nb-empty-inner">
+          <div class="nb-empty-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon app-icon--muted" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+          <h3 class="caveat" style="font-size:1.8rem;margin-bottom:0.3rem">Your Memory Book is empty</h3>
+          <p style="color:var(--text-light);margin-bottom:1.2rem;max-width:340px">Start by chatting about your child —
+            even a small moment can become something meaningful.</p>
+          <div style="display:flex;gap:0.8rem;flex-wrap:wrap;justify-content:center">
+            <button class="btn-primary" onclick="navigateTo('story-chat')"><span class="btn-inline-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span> Open Chat</button>
+            <button class="btn-ghost" onclick="openNewMemoryModal()"><span class="btn-inline-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span> Write Manually</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <input type="file" id="memoryImageInput" accept="image/*" hidden />
+
+    <!-- New Memory Modal -->
+    <div class="memory-new-overlay" id="memoryNewOverlay" style="display:none">
+      <div class="memory-new-modal">
+        <button class="share-modal-close" onclick="closeNewMemoryModal()" aria-label="Close">&times;</button>
+        <h3 class="share-modal-title caveat">New Journal Entry</h3>
+        <div class="save-gallery-form">
+          <label class="share-form-label">Title
+            <input type="text" id="newMemoryTitle" class="share-select" placeholder="e.g. The Day She Said 'I Love You'"
+              maxlength="80" />
+          </label>
+          <label class="share-form-label">Your memory
+            <textarea id="newMemoryText" class="share-textarea" rows="5"
+              placeholder="Write about a moment, a funny thing they said, a feeling you want to remember..."></textarea>
+          </label>
+          <label class="share-form-label">Tags (optional)
+            <input type="text" id="newMemoryTags" class="share-select" placeholder="e.g. funny, bedtime, first time" />
+          </label>
+          <label class="share-form-label">Photo (optional)
+            <input type="file" id="newMemoryPhoto" accept="image/*" />
+          </label>
+        </div>
+        <div class="share-actions" style="margin-top:1.2rem">
+          <button class="btn-ghost" onclick="closeNewMemoryModal()">Cancel</button>
+          <button class="btn-primary" onclick="saveNewMemory()">Save Entry</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+     PAGE: PROFILE
+     ══════════════════════════════════════════ -->
+  <section class="page page-profile" id="page-profile">
+    <div class="page-container page-container-narrow">
+      <div class="section-header">
+        <p class="section-eyebrow">Profile</p>
+        <h2 class="section-title">Your Family</h2>
+      </div>
+
+      <div class="profile-card">
+        <div class="profile-avatar">
+          <div class="avatar-circle app-icon-wrap" aria-hidden="true">
+            <svg class="app-icon profile-avatar-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="profile-info">
+            <h3>Little Bloom Family</h3>
+            <p class="profile-email">hello@littlebloom.app</p>
+            <span class="profile-plan-badge">Free Plan</span>
+          </div>
+        </div>
+
+        <div class="profile-stats">
+          <div class="stat-item">
+            <div class="stat-num" id="statStories">0</div>
+            <div class="stat-label">Polished</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num" id="statDrawings">0</div>
+            <div class="stat-label">Polished Drawings</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num" id="statMemories">0</div>
+            <div class="stat-label">Memories</div>
+          </div>
+        </div>
+
+        <div class="profile-section">
+          <h4>Children</h4>
+          <div class="children-list" id="childrenList">
+            <div class="child-tag">
+              <span class="child-avatar app-icon-wrap" aria-hidden="true"><svg class="app-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg></span>
+              <span>Add your child</span>
+            </div>
+          </div>
+          <button class="btn-ghost btn-sm">+ Add Child</button>
+        </div>
+      </div>
+
+      <!-- Pricing Cards -->
+      <div class="section-header" style="margin-top: 3rem;">
+        <p class="section-eyebrow">Plans</p>
+        <h2 class="section-title">Grow together</h2>
+      </div>
+      <div class="pricing-grid">
+        <div class="pricing-card">
+          <div class="pricing-tag">Free</div>
+          <div class="pricing-price">$0<span>/mo</span></div>
+          <ul class="pricing-features">
+            <li>✓ 5 polished drawings / month</li>
+            <li>✓ 10 drawing polishes</li>
+            <li>✓ Growth timeline</li>
+            <li>✓ 1 GB gallery storage</li>
+            <li class="dim">✗ PDF export</li>
+            <li class="dim">✗ Bilingual stories</li>
+          </ul>
+          <button class="btn-ghost" style="width:100%">Current Plan</button>
+        </div>
+        <div class="pricing-card featured">
+          <div class="pricing-badge caveat">Most Loved</div>
+          <div class="pricing-tag">Bloom</div>
+          <div class="pricing-price">$8<span>/mo</span></div>
+          <ul class="pricing-features">
+            <li>✓ Unlimited polished drawings</li>
+            <li>✓ Unlimited polishing</li>
+            <li>✓ AI voice narration</li>
+            <li>✓ PDF & print export</li>
+            <li>✓ Bilingual stories</li>
+            <li>✓ 20 GB gallery storage</li>
+          </ul>
+          <button class="btn-primary" style="width:100%">Upgrade to Bloom</button>
+        </div>
+        <div class="pricing-card">
+          <div class="pricing-tag">Family</div>
+          <div class="pricing-price">$14<span>/mo</span></div>
+          <ul class="pricing-features">
+            <li>✓ Everything in Bloom</li>
+            <li>✓ Up to 4 children</li>
+            <li>✓ Family share mode</li>
+            <li>✓ Grandparent view link</li>
+            <li>✓ Printed book orders</li>
+            <li>✓ 100 GB storage</li>
+          </ul>
+          <button class="btn-ghost" style="width:100%">Start Family</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+     PAGE: SETTINGS
+     ══════════════════════════════════════════ -->
+  <section class="page page-settings" id="page-settings">
+    <div class="page-container page-container-narrow">
+      <div class="section-header">
+        <p class="section-eyebrow">Settings</p>
+        <h2 class="section-title">Preferences</h2>
+      </div>
+
+      <div class="settings-section-list">
+        <div class="settings-block">
+          <h4><span class="settings-heading-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span> Privacy &amp; Security</h4>
+          <div class="settings-row">
+            <div>
+              <strong>Photo Encryption</strong>
+              <p>All uploaded photos are encrypted at rest</p>
+            </div>
+            <div class="toggle-wrap">
+              <input type="checkbox" id="toggleEncrypt" class="toggle-input" checked disabled />
+              <label for="toggleEncrypt" class="toggle-label">Always on</label>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div>
+              <strong>Family Sharing</strong>
+              <p>Allow family members to view your gallery</p>
+            </div>
+            <div class="toggle-wrap">
+              <input type="checkbox" id="toggleSharing" class="toggle-input" />
+              <label for="toggleSharing" class="toggle-label"></label>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div>
+              <strong>Auto-delete Uploads</strong>
+              <p>Remove uploaded originals after processing</p>
+            </div>
+            <div class="toggle-wrap">
+              <input type="checkbox" id="toggleAutoDelete" class="toggle-input" />
+              <label for="toggleAutoDelete" class="toggle-label"></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-block">
+          <h4><span class="settings-heading-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><path d="M17.5 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/><path d="M3 21l8-8"/><path d="M12 3L3 21l8-8 9-10-8 8z"/></svg></span> Preferences</h4>
+          <div class="settings-row">
+            <div>
+              <strong>Default Language</strong>
+              <p>Preferred language for generated stories</p>
+            </div>
+            <select class="tc-input tc-select" aria-label="Default language">
+              <option value="en">English</option>
+              <option value="zh">中文</option>
+              <option value="bi">Bilingual</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <div>
+              <strong>Default Art Style</strong>
+              <p>Preferred visual style for illustrations</p>
+            </div>
+            <select class="tc-input tc-select" aria-label="Default art style">
+              <option value="watercolor">Watercolor</option>
+              <option value="crayon">Crayon</option>
+              <option value="pastel">Soft Pastel</option>
+              <option value="classic">Classic</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settings-block">
+          <h4><span class="settings-heading-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg></span> Data &amp; Storage</h4>
+          <div class="settings-row">
+            <div>
+              <strong>Storage Used</strong>
+              <p>0.02 GB of 1 GB used</p>
+            </div>
+            <div class="storage-bar">
+              <div class="storage-bar-fill" style="width: 2%"></div>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div>
+              <strong>Export All Data</strong>
+              <p>Download all your stories, drawings, and memories</p>
+            </div>
+            <button class="btn-ghost btn-sm">Export</button>
+          </div>
+          <div class="settings-row settings-row-danger">
+            <div>
+              <strong>Delete All Data</strong>
+              <p>Permanently remove all your content</p>
+            </div>
+            <button class="btn-ghost btn-sm btn-danger">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+     PAGE: COMMUNITY
+     ══════════════════════════════════════════ -->
+  <section class="page page-community" id="page-community">
+    <div class="page-container">
+      <div class="section-header">
+        <p class="section-eyebrow">Community</p>
+        <h2 class="section-title">Little Artists Gallery</h2>
+        <p class="section-desc">A shared space for parents to celebrate their children's creativity.</p>
+      </div>
+
+      <div class="community-toolbar">
+        <button class="btn-primary" id="openShareBtn" onclick="openShareModal()">
+          <span aria-hidden="true">+</span> Share Artwork
+        </button>
+        <div class="community-sort">
+          <button class="chip active" data-sort="recent" onclick="sortCommunity('recent')">Recent</button>
+          <button class="chip" data-sort="popular" onclick="sortCommunity('popular')">Most Liked</button>
+        </div>
+      </div>
+
+      <div class="community-feed" id="communityFeed">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div class="share-modal-overlay" id="shareModal" style="display:none">
+      <div class="share-modal">
+        <button class="share-modal-close" onclick="closeShareModal()" aria-label="Close">&times;</button>
+        <h3 class="share-modal-title caveat">Share to Community</h3>
+
+        <div class="share-step" id="shareStep1">
+          <p class="share-label">Choose artwork from your Gallery:</p>
+          <div class="share-gallery-picker" id="shareGalleryPicker">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <div class="share-step" id="shareStep2" style="display:none">
+          <div class="share-preview-wrap">
+            <div class="share-preview-img" id="sharePreviewImg"></div>
+            <div class="share-form">
+              <label class="share-form-label">Child's age
+                <select id="shareChildAge" class="share-select">
+                  <option value="">Select age</option>
+                  <option value="Under 2">Under 2</option>
+                  <option value="2">2 years old</option>
+                  <option value="3">3 years old</option>
+                  <option value="4">4 years old</option>
+                  <option value="5">5 years old</option>
+                  <option value="6">6 years old</option>
+                  <option value="7">7 years old</option>
+                  <option value="8">8 years old</option>
+                  <option value="9">9 years old</option>
+                  <option value="10+">10+ years old</option>
+                </select>
+              </label>
+              <label class="share-form-label">Caption (optional)
+                <textarea id="shareCaption" class="share-textarea" placeholder="Tell us about this artwork..." rows="3"
+                  maxlength="200"></textarea>
+              </label>
+            </div>
+          </div>
+          <div class="share-actions">
+            <button class="btn-ghost" onclick="shareGoBack()">← Back</button>
+            <button class="btn-primary" onclick="publishToComm()">Publish</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ========== FLOATING CHAT BUTTON (app only) ========== -->
+  <button class="floating-chat-btn" id="floatingChatBtn" onclick="navigateTo('story-chat')" aria-label="Open Chat" style="display:none">
+    <span class="floating-chat-icon app-icon-wrap" aria-hidden="true"><svg class="app-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+    <span class="floating-chat-label">Chat with Bloom</span>
+  </button>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer" role="contentinfo">
+    <div class="footer-logo">
+      <span class="logo-flower" aria-hidden="true">✿</span>
+      <span class="logo-text">Little Bloom</span>
+    </div>
+    <p class="footer-tagline caveat">"Preserve your child's imagination, one story at a time."</p>
+    <div class="footer-links">
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms</a>
+      <a href="#">Contact</a>
+      <a href="#">Instagram</a>
+    </div>
+    <p class="footer-copy">&copy; 2025 Little Bloom · Made with ✦ for families everywhere</p>
+  </footer>
+
+  <script src="prompts.js"></script>
+  <script src="llamaChatService.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>

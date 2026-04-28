@@ -280,6 +280,19 @@ button {
   100% { box-shadow: 0 0 0 16px rgba(255,255,255,0); }
 }
 
+/* ── Switch camera button ── */
+
+.switch-camera {
+  position: absolute;
+  top: 100px;
+  right: 120px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.7);
+  border: none;
+  font-size: 12px;
+}
+
 /* ── Status text ── */
 
 .status-text {

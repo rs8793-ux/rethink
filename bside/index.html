@@ -1,0 +1,335 @@
+<!--
+  B-Side — index.html
+  Reflective storytelling app · 8-screen prototype
+  Served via Express backend · AI powered by Replicate
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>B-Side</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="device">
+  <div class="bg-glow glow-1"></div>
+  <div class="bg-glow glow-2"></div>
+
+  <!-- 1 — SPLASH -->
+  <section class="screen active" id="s-splash">
+    <div class="splash-body">
+      <div class="vinyl">
+        <div class="vinyl-disc">
+          <div class="vinyl-label"><div class="vinyl-hole"></div></div>
+          <div class="vinyl-ring r1"></div>
+          <div class="vinyl-ring r2"></div>
+          <div class="vinyl-ring r3"></div>
+        </div>
+      </div>
+      <h1 class="splash-name">B-Side</h1>
+      <p class="splash-tag">For the part you don't usually publish.</p>
+    </div>
+    <div class="splash-foot">
+      <button class="btn btn-primary btn-full" data-go="s-signup">Create your record</button>
+      <button class="btn-link" data-go="s-signup">Already have one? Sign in</button>
+    </div>
+  </section>
+
+  <!-- 2 — SIGN UP -->
+  <section class="screen" id="s-signup">
+    <div class="screen-body">
+      <div class="px">
+        <h2 class="heading-serif">Choose your name on B-Side.<br>It can be anything.</h2>
+        <div class="field"><input class="input" type="text" placeholder="Your name here"></div>
+        <p class="hint">This is the only name anyone will see. Your email stays private.</p>
+        <div class="field"><input class="input" type="email" placeholder="Email"></div>
+        <div class="field"><input class="input" type="password" placeholder="Password"></div>
+      </div>
+    </div>
+    <div class="screen-foot px">
+      <button class="btn btn-primary btn-full" data-go="s-home">Continue →</button>
+    </div>
+  </section>
+
+  <!-- 3 — HOME -->
+  <section class="screen" id="s-home">
+    <header class="topbar">
+      <span class="topbar-brand">B-Side</span>
+      <button class="icon-btn" data-go="s-settings" aria-label="Settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+      </button>
+    </header>
+    <div class="screen-body">
+      <div class="px">
+        <div class="stats">
+          <span><b>12</b> tracks</span>
+          <span class="stats-dot"></span>
+          <span><b>5</b> published</span>
+          <span class="stats-dot"></span>
+          <span><b>7</b> private</span>
+        </div>
+        <button class="btn btn-primary btn-full" data-go="s-chat" style="margin-top:14px">+ Add a new track</button>
+        <p class="section-label">Matched with you</p>
+        <article class="card" data-go="s-reading">
+          <div class="card-anon">Echo Room</div>
+          <p class="card-excerpt">She sat across from the person who had once known her best, and realised they were now strangers wearing familiar faces…</p>
+          <div class="card-foot">
+            <span class="card-reason">Similar decision pattern</span>
+            <span class="card-cta">Read →</span>
+          </div>
+        </article>
+        <article class="card" data-go="s-reading">
+          <div class="card-anon">Static Bloom</div>
+          <p class="card-excerpt">He packed the apartment in silence. Every object was a negotiation between who he was and who he was about to become…</p>
+          <div class="card-foot">
+            <span class="card-reason">Shared emotional arc</span>
+            <span class="card-cta">Read →</span>
+          </div>
+        </article>
+        <article class="card" data-go="s-reading">
+          <div class="card-anon">Blue Hour</div>
+          <p class="card-excerpt">The offer arrived on a Tuesday. She had seventy-two hours to decide whether to leave the only city that felt like hers…</p>
+          <div class="card-foot">
+            <span class="card-reason">Parallel turning point</span>
+            <span class="card-cta">Read →</span>
+          </div>
+        </article>
+      </div>
+    </div>
+    <nav class="bottomnav">
+      <button class="nav-btn active" data-go="s-home"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
+      <button class="nav-btn" data-go="s-record"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg><span>My Record</span></button>
+      <button class="nav-btn" data-go="s-chat"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Dialogue</span></button>
+      <button class="nav-btn" data-go="s-settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg><span>Settings</span></button>
+    </nav>
+  </section>
+
+  <!-- 4 — NEW TRACK CHAT -->
+  <section class="screen" id="s-chat">
+    <header class="chat-header">
+      <button class="icon-btn" data-go="s-home" aria-label="Back">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <span class="chat-notice">This conversation is private.</span>
+      <span style="width:36px"></span>
+    </header>
+    <div class="chat-scroll" id="chat-scroll">
+      <div class="msg msg-ai">
+        <p>Tell me what happened.</p>
+        <p>You can start wherever feels right.<br>There's no wrong way to begin.</p>
+      </div>
+    </div>
+    <div class="chat-prompt" id="chat-prompt"></div>
+    <div class="chat-bar">
+      <input class="input chat-input" id="chat-input" type="text" placeholder="Start writing…" autocomplete="off">
+      <button class="send-btn" id="chat-send" aria-label="Send">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4z"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- 5 — DRAFT PREVIEW -->
+  <section class="screen" id="s-draft">
+    <div class="screen-body">
+      <div class="px">
+        <p class="meta-label">DRAFT · Not published yet</p>
+        <div class="hr"></div>
+        <div class="prose" id="draft-prose">
+          <p>She arrived twenty minutes early and sat in the car with the engine off. The restaurant glowed warm through its windows, and she could see someone inside arranging flowers on a table. She had rehearsed what she would say — the careful version, the one that left room for dignity on both sides.</p>
+          <p>But when he sat down across from her, something shifted. He looked older. Not in years, but in the way people age when they've stopped pretending. And she realised the speech she'd prepared was for a version of him that no longer existed.</p>
+          <p>They talked for two hours. She did not say what she had planned. Instead, she listened — really listened — for the first time in longer than she could remember. Somewhere between the main course and the coffee, she understood that leaving wasn't the brave choice. Staying — with full knowledge of what staying meant — was.</p>
+          <p>She drove home in silence. The city looked different, the way places do when you've just made a decision that rearranges everything quietly.</p>
+        </div>
+        <div class="hr"></div>
+        <button class="btn-link" id="decisions-toggle">3 decision points identified →</button>
+        <div class="decisions" id="decisions-list" hidden>
+          <div class="decision">Decision point 1 — She stayed instead of leaving.</div>
+          <div class="decision">Decision point 2 — She chose listening over her rehearsed speech.</div>
+          <div class="decision">Decision point 3 — She drove home accepting the rearrangement.</div>
+        </div>
+      </div>
+    </div>
+    <div class="draft-bar" id="draft-bar">
+      <button class="draft-act" id="act-edit">Edit</button>
+      <button class="draft-act" id="act-anon">Make anonymous</button>
+      <button class="draft-act" id="act-publish">Publish</button>
+      <button class="draft-act" id="act-private">Keep private</button>
+    </div>
+    <div class="draft-confirm" id="draft-confirm" hidden>
+      <p id="draft-confirm-msg"></p>
+    </div>
+  </section>
+
+  <!-- 6 — STORY READING -->
+  <section class="screen" id="s-reading">
+    <header class="topbar">
+      <button class="icon-btn" data-go="s-home" aria-label="Back">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <button class="icon-btn" aria-label="Share">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+      </button>
+    </header>
+    <div class="screen-body">
+      <div class="px">
+        <h2 class="reading-title">She sat across from the person who had once known her best</h2>
+        <p class="reading-by">by Echo Room</p>
+        <div class="prose">
+          <p>She sat across from the person who had once known her best, and realised they were now strangers wearing familiar faces. The café was the same one they used to visit on Sunday mornings, back when Sundays meant something shared.</p>
+          <p>He stirred his coffee the same way — three slow circles, tap the spoon twice. She used to find it endearing. Now it felt like watching someone perform a memory they didn't know they were performing.</p>
+          <p>She had come to ask for something back. Not an object — a version of herself she'd left in the space between them. But sitting there, watching him talk about his new apartment and his new routine, she understood that version was gone. Not lost. Just no longer needed.</p>
+          <p>She paid for both coffees and walked out into the cold. The air tasted clean. She didn't look back — not because it hurt, but because for the first time, she didn't need to.</p>
+        </div>
+        <div class="hr"></div>
+        <div class="decisions" style="display:block">
+          <div class="decision">Decision point 1 — She chose to meet him in person.</div>
+          <div class="decision">Decision point 2 — She let go of what she came to retrieve.</div>
+          <div class="decision">Decision point 3 — She left without looking back.</div>
+        </div>
+        <div class="hr"></div>
+        <h3 class="comment-heading">What do you hear in this track?</h3>
+        <div class="comment-tabs" id="comment-tabs">
+          <button class="pill" data-ctab="metoo">Me too</button>
+          <button class="pill" data-ctab="ifme">If it were me</button>
+          <button class="pill" data-ctab="other">I took the other road</button>
+        </div>
+        <div class="comment-compose" id="comment-compose" hidden>
+          <input class="input" id="comment-input" type="text" placeholder="Share your response…">
+          <button class="send-btn send-btn-sm" id="comment-send" aria-label="Post">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4z"/></svg>
+          </button>
+        </div>
+        <div class="comment-list" id="comment-list">
+          <div class="comment" data-ctab="metoo">
+            <span class="comment-who">Soft Exit</span>
+            <p>I've had that exact moment — realising you came looking for a version of yourself that already moved on.</p>
+            <span class="comment-when">2 hours ago</span>
+          </div>
+          <div class="comment" data-ctab="metoo">
+            <span class="comment-who">Paper Moon</span>
+            <p>The part about the coffee stirring. Small rituals become archaeology when enough time passes.</p>
+            <span class="comment-when">5 hours ago</span>
+          </div>
+          <div class="comment" data-ctab="ifme" hidden>
+            <span class="comment-who">Blue Hour</span>
+            <p>I think I would have said something. Not the rehearsed version, but the raw one. Even if it changed nothing.</p>
+            <span class="comment-when">3 hours ago</span>
+          </div>
+          <div class="comment" data-ctab="other" hidden>
+            <span class="comment-who">Glass Veranda</span>
+            <p>I did look back. And it didn't hurt the way I expected. It just felt like closing a book I'd already finished.</p>
+            <span class="comment-when">1 day ago</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 — MY RECORD -->
+  <section class="screen" id="s-record">
+    <div class="screen-body">
+      <div class="px">
+        <h2 class="heading-serif" style="margin-bottom:10px">Your record</h2>
+        <div class="stats">
+          <span><b>12</b> tracks</span>
+          <span class="stats-dot"></span>
+          <span><b>5</b> published</span>
+          <span class="stats-dot"></span>
+          <span><b>7</b> private</span>
+        </div>
+        <div class="record-tabs">
+          <button class="pill active" data-rtab="pub">Published</button>
+          <button class="pill" data-rtab="priv">Private</button>
+        </div>
+        <div id="rtab-pub">
+          <div class="record-row"><div class="record-row-body"><p class="record-excerpt">She arrived twenty minutes early and sat in the car with the engine off…</p><span class="record-date">April 10, 2026</span></div><button class="more-btn" data-modal="modal-record">···</button></div>
+          <div class="record-row"><div class="record-row-body"><p class="record-excerpt">He told himself it was just a job, but every morning the commute felt heavier…</p><span class="record-date">March 28, 2026</span></div><button class="more-btn" data-modal="modal-record">···</button></div>
+          <div class="record-row"><div class="record-row-body"><p class="record-excerpt">The letter arrived on a Thursday. She read it twice, then folded it carefully…</p><span class="record-date">March 15, 2026</span></div><button class="more-btn" data-modal="modal-record">···</button></div>
+          <div class="record-row"><div class="record-row-body"><p class="record-excerpt">They met at the airport — not by plan, but by the kind of coincidence…</p><span class="record-date">Feb 22, 2026</span></div><button class="more-btn" data-modal="modal-record">···</button></div>
+          <div class="record-row"><div class="record-row-body"><p class="record-excerpt">She picked up the phone, dialled half the number, then put it down again…</p><span class="record-date">Feb 8, 2026</span></div><button class="more-btn" data-modal="modal-record">···</button></div>
+        </div>
+        <div id="rtab-priv" hidden>
+          <div class="record-row"><div class="record-row-body"><p class="record-excerpt">He never sent the message. It stayed in drafts for eleven months…</p><span class="record-date">April 12, 2026</span></div><button class="more-btn" data-modal="modal-record">···</button></div>
+          <div class="record-row"><div class="record-row-body"><p class="record-excerpt">The apartment was empty now, but not in the way she expected…</p><span class="record-date">April 1, 2026</span></div><button class="more-btn" data-modal="modal-record">···</button></div>
+          <div class="record-row"><div class="record-row-body"><p class="record-excerpt">She applied anyway, knowing the odds. Some things aren't about winning…</p><span class="record-date">March 20, 2026</span></div><button class="more-btn" data-modal="modal-record">···</button></div>
+          <div class="record-row"><div class="record-row-body"><p class="record-excerpt">He sat through the entire concert without moving. The music found the exact…</p><span class="record-date">March 5, 2026</span></div><button class="more-btn" data-modal="modal-record">···</button></div>
+          <div class="record-row"><div class="record-row-body"><p class="record-excerpt">She returned the ring not because she stopped loving him, but because…</p><span class="record-date">Feb 18, 2026</span></div><button class="more-btn" data-modal="modal-record">···</button></div>
+          <div class="record-row"><div class="record-row-body"><p class="record-excerpt">The voicemail was still saved. He listened to it once a year, on the same…</p><span class="record-date">Jan 30, 2026</span></div><button class="more-btn" data-modal="modal-record">···</button></div>
+          <div class="record-row"><div class="record-row-body"><p class="record-excerpt">They agreed to pretend it hadn't happened. For a while, it almost worked…</p><span class="record-date">Jan 12, 2026</span></div><button class="more-btn" data-modal="modal-record">···</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="screen-foot px" style="padding-bottom:58px">
+      <button class="btn btn-primary btn-full" data-go="s-chat">+ Add a new track</button>
+    </div>
+    <nav class="bottomnav">
+      <button class="nav-btn" data-go="s-home"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
+      <button class="nav-btn active" data-go="s-record"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg><span>My Record</span></button>
+      <button class="nav-btn" data-go="s-chat"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Dialogue</span></button>
+      <button class="nav-btn" data-go="s-settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg><span>Settings</span></button>
+    </nav>
+  </section>
+
+  <!-- 8 — SETTINGS -->
+  <section class="screen" id="s-settings">
+    <div class="screen-body">
+      <div class="px">
+        <h2 class="heading-serif" style="margin-bottom:18px">Settings</h2>
+        <div class="setting-group"><p class="setting-title">Account</p>
+          <button class="setting-row">Change display name</button>
+          <button class="setting-row">Change email</button>
+          <button class="setting-row">Change password</button>
+        </div>
+        <div class="setting-group"><p class="setting-title">Privacy</p>
+          <div class="setting-row setting-row-stack"><span>Default visibility</span>
+            <label class="radio"><input type="radio" name="vis" value="pub" checked><span class="radio-dot"></span>Public</label>
+            <label class="radio"><input type="radio" name="vis" value="match"><span class="radio-dot"></span>Matched users only</label>
+            <label class="radio"><input type="radio" name="vis" value="anon"><span class="radio-dot"></span>Fully anonymous</label>
+          </div>
+        </div>
+        <div class="setting-group"><p class="setting-title">Data</p>
+          <button class="setting-row">Download my data</button>
+          <button class="setting-row">Delete all my tracks</button>
+          <button class="setting-row">Delete account</button>
+        </div>
+        <div class="setting-group"><p class="setting-title">About</p>
+          <button class="setting-row">What B-Side collects</button>
+          <button class="setting-row">What B-Side does not collect</button>
+          <button class="setting-row">Contact</button>
+        </div>
+      </div>
+    </div>
+    <nav class="bottomnav">
+      <button class="nav-btn" data-go="s-home"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
+      <button class="nav-btn" data-go="s-record"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg><span>My Record</span></button>
+      <button class="nav-btn" data-go="s-chat"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Dialogue</span></button>
+      <button class="nav-btn active" data-go="s-settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg><span>Settings</span></button>
+    </nav>
+  </section>
+
+</div>
+
+<!-- MODALS -->
+<div class="overlay" id="overlay"></div>
+<div class="modal" id="modal-anon">
+  <h3>Make anonymous</h3>
+  <p>B-Side will soften identifying details — names, places, and specific dates — so the story reads as universal rather than personal.</p>
+  <p class="modal-sub">You can review the changes before publishing.</p>
+  <button class="btn btn-primary btn-full" id="anon-confirm">Continue</button>
+  <button class="btn-link" data-close-modal>Cancel</button>
+</div>
+<div class="modal modal-sheet" id="modal-record">
+  <button class="sheet-option" data-close-modal>Edit</button>
+  <button class="sheet-option" data-close-modal>Delete</button>
+  <button class="sheet-option" data-close-modal>Change visibility</button>
+  <button class="btn-link" data-close-modal style="margin-top:8px">Cancel</button>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

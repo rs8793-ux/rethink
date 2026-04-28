@@ -1,0 +1,4 @@
+# Local overrides (do not commit)
+*.local.js
+
+node_modules/

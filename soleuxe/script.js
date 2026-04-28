@@ -334,25 +334,46 @@ function removePlaced(uid) {
    Camera
    ══════════════════════════════════ */
 
+let currentFacingMode = "environment";
+
+function stopCurrentStream() {
+  if (video.srcObject) {
+    video.srcObject.getTracks().forEach(t => t.stop());
+    video.srcObject = null;
+  }
+}
+
 async function startCamera() {
   try {
+    stopCurrentStream();
+
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: false,
       video: {
-        facingMode: { ideal: "environment" },
-        width:  { ideal: 1080 },
-        height: { ideal: 1920 }
+        facingMode: { ideal: currentFacingMode },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
       }
     });
+
     video.srcObject = stream;
-    await new Promise(r => { video.onloadedmetadata = r; });
+    video.setAttribute("playsinline", true);
+    await video.play();
+
     resizeCanvas();
     initBox();
-    run();
-  } catch (err) {
-    console.error(err);
-    statusText.textContent = "Camera access blocked — please allow permission.";
+    if (!animationId) run();
+  } catch (error) {
+    console.error("Camera error:", error);
+    statusText.textContent =
+      "Camera access blocked — please allow permission.";
   }
+}
+
+async function switchCamera() {
+  currentFacingMode =
+    currentFacingMode === "environment" ? "user" : "environment";
+  await startCamera();
 }
 
 function resizeCanvas() {
